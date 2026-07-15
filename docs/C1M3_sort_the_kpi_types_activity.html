@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sort a reporting pack into inputs, diagnostics, and outputs</title>
+<style>
+  :root{
+    --page:#eef1f6;
+    --surface:#ffffff;
+    --surface-2:#f6f8fb;
+    --ink:#161f2e;
+    --ink-2:#4a5a70;
+    --ink-3:#6b7a90;
+    --line:#d5deea;
+    --line-2:#e6ecf4;
+    --accent:#1b4f8a;
+    --accent-dark:#123a68;
+    --accent-soft:#e7eff8;
+    --ok-ink:#166a41;
+    --ok-bg:#e6f4ec;
+    --ok-line:#b4dcc4;
+    --near-ink:#8a5300;
+    --near-bg:#fbf1dd;
+    --near-line:#eecf96;
+    --no-ink:#9e2833;
+    --no-bg:#fbe9eb;
+    --no-line:#eec2c7;
+    --focus:#0b3d91;
+    --dim:#c7cedb;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+    font-size:16px;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:28px 20px 72px;}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+  h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;letter-spacing:-0.01em;}
+  h2{font-size:1.18rem;line-height:1.25;margin:0 0 4px;letter-spacing:-0.005em;}
+  h3{font-size:1rem;margin:0 0 6px;}
+  p{margin:0 0 12px;}
+  .lede{color:var(--ink-2);font-size:1.02rem;margin-bottom:16px;}
+  .eyebrow{
+    display:inline-block;font-size:0.72rem;font-weight:700;letter-spacing:0.09em;
+    text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
+    border-radius:999px;padding:4px 11px;margin-bottom:14px;
+  }
+  .muted{color:var(--ink-3);}
+  strong{color:var(--ink);}
+
+  .slice{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 20px;}
+  .chip{
+    font-size:0.82rem;color:var(--ink-2);background:var(--surface);
+    border:1px solid var(--line);border-radius:8px;padding:5px 10px;
+  }
+  .chip b{color:var(--ink);font-weight:600;}
+
+  .defs{
+    background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;
+    padding:12px 14px;margin:0 0 20px;font-size:0.9rem;
+  }
+  .defs dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;}
+  .defs dt{font-weight:600;color:var(--ink);white-space:nowrap;}
+  .defs dd{margin:0;color:var(--ink-2);}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:22px 22px 24px;margin:0 0 22px;
+    box-shadow:0 1px 2px rgba(20,40,70,0.04);
+  }
+  .zonehead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .zonetag{
+    font-size:0.72rem;font-weight:700;color:#ffffff;background:var(--accent);
+    border-radius:6px;padding:3px 8px;letter-spacing:0.04em;white-space:nowrap;
+  }
+  .zonetag.play{background:var(--ink-2);}
+
+  /* Zone 1 — sortable metric cards */
+  .crit-list{margin:12px 0 4px;padding:0;list-style:none;}
+  .crit{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:12px;
+    padding:12px 14px;margin:0 0 10px;
+  }
+  .crit-text{font-weight:700;font-size:0.98rem;margin:0 0 2px;}
+  .crit-sub{font-size:0.86rem;color:var(--ink-3);margin:0 0 9px;}
+  .choices{display:flex;flex-wrap:wrap;gap:8px;}
+  button.pick{
+    font:inherit;font-size:0.84rem;font-weight:700;cursor:pointer;
+    min-height:40px;border-radius:9px;padding:6px 12px;
+    border:1.5px solid var(--line);background:var(--surface-2);color:var(--accent-dark);
+  }
+  button.pick:hover{background:var(--accent-soft);}
+  button.pick[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:#fff;
+  }
+  .crit.marked-good{border-color:var(--ok-line);background:var(--ok-bg);}
+  .crit.marked-bad{border-color:var(--no-line);background:var(--no-bg);}
+  .crit-note{margin:9px 0 0;font-size:0.9rem;}
+  .crit.marked-good .crit-note{color:var(--ok-ink);}
+  .crit.marked-bad .crit-note{color:var(--no-ink);}
+  .crit-note:empty{display:none;}
+
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 2px;}
+  button{
+    font:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;
+    border-radius:10px;padding:11px 18px;min-height:44px;border:1.5px solid transparent;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-ghost{background:var(--surface);color:var(--accent-dark);border-color:var(--line);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-link{
+    background:none;border:none;color:var(--accent-dark);padding:8px 2px;
+    text-decoration:underline;text-underline-offset:3px;font-weight:600;min-height:auto;
+  }
+
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px;}
+
+  .feedback{margin-top:16px;border-radius:11px;padding:0;overflow:hidden;}
+  .feedback:empty{display:none;}
+  .fb-inner{padding:14px 16px;border:1.5px solid;border-radius:11px;font-size:0.96rem;}
+  .fb-title{font-weight:700;margin-bottom:5px;}
+  .fb-ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink);}
+  .fb-ok .fb-title{color:var(--ok-ink);}
+  .fb-near{background:var(--near-bg);border-color:var(--near-line);color:var(--near-ink);}
+  .fb-near .fb-title{color:var(--near-ink);}
+  .fb-no{background:var(--no-bg);border-color:var(--no-line);color:var(--no-ink);}
+  .fb-no .fb-title{color:var(--no-ink);}
+  .fb-list{margin:6px 0 0;padding:0 0 0 2px;list-style:none;}
+  .fb-list li{margin:0 0 7px;padding:0 0 0 16px;position:relative;}
+  .fb-list li::before{content:"\2013";position:absolute;left:0;top:0;}
+
+  .solution{margin-top:16px;}
+  .sol-body{
+    border:1px dashed var(--line);border-radius:11px;background:var(--surface-2);
+    padding:16px 18px;margin-top:10px;
+  }
+  .sol-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:6px;}
+  .sol-col h3{margin-bottom:8px;font-size:0.92rem;}
+  .sol-col ul{margin:0;padding:0 0 0 18px;color:var(--ink-2);font-size:0.88rem;}
+  .sol-col li{margin:0 0 6px;}
+  .sol-read{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2);color:var(--ink-2);font-size:0.92rem;}
+  .hidden{display:none;}
+
+  /* Zone 2 — the traceable hierarchy */
+  .tracewrap{
+    border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+    padding:14px;margin:0 0 16px;
+  }
+  .trace-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .trace-name{font-weight:700;font-size:0.95rem;}
+  .trace-choices{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px;}
+  .trace-hint{font-size:0.82rem;color:var(--ink-3);margin:0 0 6px;}
+
+  .sliderbox{margin:14px 0 4px;}
+  .sl-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px;}
+  .sl-name{font-weight:600;font-size:0.92rem;}
+  .sl-val{font-weight:700;color:var(--accent-dark);}
+  input[type="range"]{width:100%;height:28px;cursor:pointer;accent-color:var(--accent);}
+
+  .tier-label{
+    font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--ink-3);margin:16px 0 8px;
+  }
+  .tier{display:grid;gap:10px;margin:0 0 4px;}
+  .tier.t-output{grid-template-columns:1fr;}
+  .tier.t-diag{grid-template-columns:repeat(3,1fr);}
+  .tier.t-input{grid-template-columns:repeat(2,1fr);}
+  .node{
+    border:1.5px solid var(--line);border-radius:11px;background:var(--surface-2);
+    padding:10px 12px;text-align:center;transition:background .15s ease,border-color .15s ease,opacity .15s ease;
+  }
+  .node .n-lab{font-size:0.74rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--ink-3);}
+  .node .n-val{font-size:1.02rem;font-weight:800;color:var(--ink);margin-top:2px;}
+  .node.active{background:var(--accent-soft);border-color:var(--accent);}
+  .node.active .n-lab{color:var(--accent-dark);}
+  .node.active .n-val{color:var(--accent-dark);}
+  .node.inactive{opacity:0.42;}
+  .link-note{
+    margin-top:12px;border-radius:11px;border:1.5px solid var(--line-2);
+    background:var(--surface-2);color:var(--ink-2);padding:11px 14px;font-size:0.92rem;
+  }
+  .link-note b{color:var(--ink);}
+
+  footer{color:var(--ink-3);font-size:0.82rem;text-align:center;margin-top:6px;}
+
+  @media (max-width:480px){
+    body{font-size:15px;}
+    .wrap{padding:20px 14px 56px;}
+    h1{font-size:1.34rem;}
+    .card{padding:18px 15px 20px;border-radius:12px;}
+    .defs dl{grid-template-columns:1fr;gap:2px 0;}
+    .defs dt{margin-top:6px;}
+    .choices button.pick{flex:1 1 auto;}
+    .sol-grid{grid-template-columns:1fr;}
+    .tier.t-diag{grid-template-columns:1fr;}
+    .tier.t-input{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <span class="eyebrow">KPI thinking and selection</span>
+  <h1>Sort a reporting pack into inputs, diagnostics, and outputs</h1>
+  <p class="lede">Handed a reporting pack with dozens of figures, the hardest question isn't which numbers are correct. It's which ones actually matter. A <strong>KPI</strong> earns that name only once it has been sorted by type, so that a business leader can trace a disappointing result back down to the driver behind it. Sort seven real figures below, then trace one output back to its cause.</p>
+
+  <p class="muted">FP&amp;A stands for financial planning and analysis. A <strong>metric</strong> is any number you can measure; a <strong>KPI</strong> is a metric someone has deliberately classified and tied to a decision. The classification test sorts every candidate into one of three types. A few terms before you start.</p>
+
+  <div class="defs">
+    <dl>
+      <dt>Output KPI</dt><dd>An achieved result the business is accountable for &mdash; the thing everything else is meant to explain.</dd>
+      <dt>Diagnostic KPI</dt><dd>A measure of the efficiency or quality of the process connecting an input to an output.</dd>
+      <dt>Input KPI</dt><dd>A resource or activity level that drives the process &mdash; something a team commits or moves directly.</dd>
+      <dt>KPI hierarchy</dt><dd>Inputs, diagnostics, and outputs arranged so a result at the top can be traced downward to the driver most likely responsible.</dd>
+    </dl>
+  </div>
+
+  <div class="slice" aria-label="What this reporting pack covers">
+    <span class="chip"><b>Business:</b> a cross-border payments platform</span>
+    <span class="chip"><b>Data:</b> full-year actuals, all countries and products</span>
+    <span class="chip"><b>Question:</b> which type is each figure &mdash; input, diagnostic, or output?</span>
+  </div>
+
+  <!-- ZONE 1 -->
+  <section class="card" aria-labelledby="z1h">
+    <div class="zonehead">
+      <span class="zonetag">Task</span>
+      <h2 id="z1h">Run the type test on seven real figures</h2>
+    </div>
+    <p class="muted" style="margin-bottom:6px;">Below are seven figures pulled from this platform's actual annual plan. For each one, ask the type test's question: is this an achieved result (<strong>output</strong>), the efficiency or quality link between a driver and a result (<strong>diagnostic</strong>), or a resource or activity level the business commits directly (<strong>input</strong>)? Sort all seven, then check your work.</p>
+
+    <ul class="crit-list" id="crit-list" aria-label="Seven real reporting-pack figures to classify"></ul>
+
+    <div class="btnrow">
+      <button type="button" class="btn-primary" id="check-btn">Check my sort</button>
+      <button type="button" class="btn-ghost" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+    <div class="solution hidden" id="solution-wrap">
+      <button type="button" class="btn-link" id="sol-toggle" aria-expanded="false" aria-controls="sol-body">Show the correct types</button>
+      <div class="sol-body hidden" id="sol-body">
+        <div class="sol-grid">
+          <div class="sol-col"><h3>Input</h3><ul id="sol-input"></ul></div>
+          <div class="sol-col"><h3>Diagnostic</h3><ul id="sol-diag"></ul></div>
+          <div class="sol-col"><h3>Output</h3><ul id="sol-output"></ul></div>
+        </div>
+        <div class="sol-read">The test is always the same question: is this a result the business is accountable for, a resource it commits going in, or the efficiency link between the two? Payment volume and operating expense are resources this platform commits before a dollar is earned. The take rate, the processing cost rate, and the loss rate are ratios that describe how well that volume converts into revenue and how much of it survives as profit. Revenue and operating profit are the achieved results sitting at the top &mdash; the numbers a leader is actually accountable for.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE 2 -->
+  <section class="card" aria-labelledby="z2h">
+    <div class="zonehead">
+      <span class="zonetag play">Explore</span>
+      <h2 id="z2h">Trace an output back to its drivers</h2>
+    </div>
+    <p class="muted" style="margin-bottom:6px;">There is no right or wrong here. Choose which output you want to trace, then drag payment volume and watch the hierarchy respond. Notice which diagnostics and inputs light up for each output, and which stay dim &mdash; not every input drives every result, and that is exactly what a hierarchy is built to show.</p>
+
+    <div class="tracewrap">
+      <div class="trace-top">
+        <span class="trace-name">Trace which output?</span>
+      </div>
+      <div class="trace-choices" role="group" aria-label="Choose which output KPI to trace">
+        <button type="button" class="pick" id="trace-rev" aria-pressed="true">Revenue</button>
+        <button type="button" class="pick" id="trace-op" aria-pressed="false">Operating profit</button>
+      </div>
+      <p class="trace-hint" id="trace-hint"></p>
+    </div>
+
+    <div class="sliderbox">
+      <div class="sl-top">
+        <span class="sl-name">Payment volume</span>
+        <span class="sl-val num" id="sl-val"></span>
+      </div>
+      <input type="range" id="vol-range" min="4353177238" max="8084472014" step="10000000"
+             aria-label="Payment volume, in dollars">
+    </div>
+
+    <p class="tier-label">Output</p>
+    <div class="tier t-output">
+      <div class="node" id="node-rev"><div class="n-lab">Revenue</div><div class="n-val num" id="val-rev"></div></div>
+    </div>
+    <div class="tier t-output" style="margin-top:8px;">
+      <div class="node" id="node-op"><div class="n-lab">Operating profit</div><div class="n-val num" id="val-op"></div></div>
+    </div>
+
+    <p class="tier-label">Diagnostic</p>
+    <div class="tier t-diag">
+      <div class="node" id="node-take"><div class="n-lab">Take rate</div><div class="n-val num" id="val-take"></div></div>
+      <div class="node" id="node-cost"><div class="n-lab">Cost rate</div><div class="n-val num" id="val-cost"></div></div>
+      <div class="node" id="node-loss"><div class="n-lab">Loss rate</div><div class="n-val num" id="val-loss"></div></div>
+    </div>
+
+    <p class="tier-label">Input</p>
+    <div class="tier t-input">
+      <div class="node" id="node-vol"><div class="n-lab">Payment volume</div><div class="n-val num" id="val-vol"></div></div>
+      <div class="node" id="node-opex"><div class="n-lab">Operating expense</div><div class="n-val num" id="val-opex"></div></div>
+    </div>
+
+    <div class="link-note" id="link-note" role="status" aria-live="polite"></div>
+
+    <div class="btnrow">
+      <button type="button" class="btn-ghost" id="play-reset">Reset volume to the real annual figure</button>
+    </div>
+  </section>
+
+  <footer>An ungraded practice activity. Explore for as long as you like, then close the tab whenever you are done.</footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  /* ---------- Verified base plan ----------
+     Full-year actuals, every month, country, and product, summed straight from the
+     Budget_Detail source workbook (360 data rows). Nothing here is invented.
+       Volume (TPV)      6,218,824,625.86
+       Revenue              43,266,787.06   = volume x take rate
+       COGS                 12,769,174.75   = volume x cost rate
+       Loss provision          770,046.75   = volume x loss rate
+       Operating expense    17,929,286.37   (fixed, does not move with volume)
+     Gross profit    = Revenue - COGS - Loss              = 29,727,565.56
+     Operating profit = Gross profit - Operating expense   = 11,798,279.19 */
+  var TPV    = 6218824625.86;
+  var REVENUE= 43266787.06;
+  var COGS   = 12769174.75;
+  var LOSS   = 770046.75;
+  var OPEX   = 17929286.37;
+
+  var TAKE_RATE = REVENUE/TPV;   // ~0.6957%
+  var COST_RATE = COGS/TPV;      // ~0.2053%
+  var LOSS_RATE = LOSS/TPV;      // ~0.0124%
+
+  function usd(n){ return "$"+Math.round(n).toLocaleString("en-US"); }
+  function pct(n,d){ return (n*100).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d})+"%"; }
+
+  /* ---------- Zone 1: the type test on seven real figures ----------
+     Correct types match the module's own worked example: an achieved result at
+     the top (output), an efficiency/quality link in the middle (diagnostic), and
+     a resource or activity level at the base (input). Figures and rates below are
+     the real annual totals and their derived per-dollar rates. */
+  var CRITERIA = [
+    { id:"vol", type:"input",
+      text:"Payment volume (TPV): the dollar amount of payments processed this year.",
+      sub:"Actual book figure: "+usd(TPV)+".",
+      why:"Volume is the raw activity level moving through the platform, not a result anyone is judged on. It's the resource that drives everything above it \u2014 an Input, the same way headcount or marketing spend would be." },
+    { id:"opex", type:"input",
+      text:"Operating expense: salaries, systems, and overhead for the year.",
+      sub:"Actual book figure: "+usd(OPEX)+".",
+      why:"This is a resource commitment the business makes for the period, not a measure of how efficiently volume converts into revenue and not an achieved result. It sits in Input, alongside volume." },
+    { id:"take", type:"diagnostic",
+      text:"Take rate: the share of each dollar of volume kept as revenue.",
+      sub:"Actual book figure: about "+pct(TAKE_RATE,3)+" of volume.",
+      why:"This is a ratio, not a resource or a result \u2014 it measures how efficiently volume becomes revenue. That efficiency link is exactly what a Diagnostic KPI is for." },
+    { id:"cost", type:"diagnostic",
+      text:"Processing cost rate: cost of goods sold as a share of volume.",
+      sub:"Actual book figure: about "+pct(COST_RATE,3)+" of volume.",
+      why:"Like the take rate, this is a per-dollar efficiency measure connecting volume to a financial outcome, not a result in itself. It belongs in Diagnostic." },
+    { id:"loss", type:"diagnostic",
+      text:"Loss rate: money set aside for fraud and default, as a share of volume.",
+      sub:"Actual book figure: about "+pct(LOSS_RATE,4)+" of volume.",
+      why:"This measures the quality of the volume being processed \u2014 how much of it turns into expected loss \u2014 rather than a resource committed or a result achieved. It's a Diagnostic." },
+    { id:"revenue", type:"output",
+      text:"Revenue.",
+      sub:"Actual book figure: "+usd(REVENUE)+".",
+      why:"Revenue is the achieved result the business is accountable for delivering. It comes out of the process; it isn't a resource going in or a measure of process efficiency. It's an Output." },
+    { id:"opprofit", type:"output",
+      text:"Operating profit.",
+      sub:"Actual book figure: "+usd(11798279.19)+".",
+      why:"This is the bottom-line result of the whole plan \u2014 what a leader is ultimately judged on. Treating a financial result like this as a Diagnostic is one of the most common early-career mistakes; it's an Output." }
+  ];
+  var TYPE_LABEL = { input:"Input", diagnostic:"Diagnostic", output:"Output" };
+
+  var picks = {};
+  CRITERIA.forEach(function(c){ picks[c.id] = null; });
+  var checked = false;
+
+  function buildCrit(){
+    var host = el("crit-list");
+    host.innerHTML = "";
+    CRITERIA.forEach(function(c){
+      var li = document.createElement("li");
+      li.className = "crit"; li.id = "crit-"+c.id;
+
+      var t = document.createElement("p");
+      t.className = "crit-text"; t.textContent = c.text;
+
+      var sub = document.createElement("p");
+      sub.className = "crit-sub"; sub.textContent = c.sub;
+
+      var ch = document.createElement("div");
+      ch.className = "choices"; ch.setAttribute("role","group");
+      ch.setAttribute("aria-label","Classify: "+c.text);
+
+      ["input","diagnostic","output"].forEach(function(bucket){
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "pick"; b.textContent = TYPE_LABEL[bucket];
+        b.setAttribute("aria-pressed","false"); b.setAttribute("data-b",bucket);
+        b.addEventListener("click", function(){ setPick(c.id,bucket); });
+        ch.appendChild(b);
+      });
+
+      var note = document.createElement("p");
+      note.className = "crit-note"; note.id = "note-"+c.id;
+
+      li.appendChild(t); li.appendChild(sub); li.appendChild(ch); li.appendChild(note);
+      host.appendChild(li);
+    });
+    renderPicks();
+  }
+
+  function setPick(id,bucket){
+    picks[id] = bucket;
+    if(checked){
+      checked = false;
+      el("feedback").innerHTML = "";
+      el("solution-wrap").classList.add("hidden");
+      resetSolutionToggle();
+      clearMarks();
+    }
+    renderPicks();
+  }
+
+  function renderPicks(){
+    CRITERIA.forEach(function(c){
+      var li = el("crit-"+c.id);
+      var btns = li.querySelectorAll("button.pick");
+      btns.forEach(function(btn){
+        btn.setAttribute("aria-pressed", btn.getAttribute("data-b")===picks[c.id] ? "true" : "false");
+      });
+    });
+  }
+
+  function clearMarks(){
+    CRITERIA.forEach(function(c){
+      var li = el("crit-"+c.id);
+      li.classList.remove("marked-good","marked-bad");
+      el("note-"+c.id).textContent = "";
+    });
+  }
+
+  function setFeedback(kind,title,listItems,closing){
+    var cls = kind==="ok"?"fb-ok":kind==="near"?"fb-near":"fb-no";
+    var html = '<div class="fb-inner '+cls+'"><div class="fb-title">'+title+'</div>';
+    if(listItems && listItems.length){
+      html += '<ul class="fb-list">';
+      listItems.forEach(function(t){ html += "<li>"+t+"</li>"; });
+      html += "</ul>";
+    }
+    if(closing){ html += "<div>"+closing+"</div>"; }
+    html += "</div>";
+    el("feedback").innerHTML = html;
+  }
+
+  function check(){
+    var unsorted = CRITERIA.filter(function(c){ return picks[c.id]===null; });
+    if(unsorted.length){
+      setFeedback("near","Sort all seven first.",null,
+        "You still have "+unsorted.length+" left to classify. Choose <strong>input</strong>, <strong>diagnostic</strong>, or <strong>output</strong> for each, then check.");
+      return;
+    }
+
+    checked = true;
+    el("solution-wrap").classList.remove("hidden");
+    clearMarks();
+
+    var wrong = [];
+    CRITERIA.forEach(function(c){
+      var li = el("crit-"+c.id);
+      if(picks[c.id]===c.type){
+        li.classList.add("marked-good");
+      }else{
+        li.classList.add("marked-bad");
+        el("note-"+c.id).textContent = c.why;
+        wrong.push(c);
+      }
+    });
+
+    if(wrong.length===0){
+      setFeedback("ok","That's a real KPI hierarchy.",null,
+        "Payment volume and operating expense are your inputs; take rate, processing cost rate, and loss rate are your diagnostics; revenue and operating profit are your outputs. That is the exact spine of a hierarchy a CFO could trace top to bottom \u2014 the same test you just ran works on any reporting pack, however many figures it has.");
+      return;
+    }
+
+    var kind = wrong.length===1 ? "near" : "no";
+    var title = wrong.length===1 ? "Close \u2014 one is the wrong type." : wrong.length+" are the wrong type.";
+    var items = wrong.map(function(c){ return "<strong>"+esc(c.text)+"</strong> "+c.why; });
+    setFeedback(kind,title,items,
+      "The type test is always the same question: is this a result the business is accountable for (output), a resource or activity behind it (input), or the efficiency link between the two (diagnostic)?");
+  }
+
+  function resetSolutionToggle(){
+    var t = el("sol-toggle");
+    el("sol-body").classList.add("hidden");
+    t.setAttribute("aria-expanded","false");
+    t.textContent = "Show the correct types";
+  }
+
+  function buildSolutionLists(){
+    var cols = { input: el("sol-input"), diagnostic: el("sol-diag"), output: el("sol-output") };
+    cols.input.innerHTML=""; cols.diagnostic.innerHTML=""; cols.output.innerHTML="";
+    CRITERIA.forEach(function(c){
+      var liEl = document.createElement("li");
+      liEl.textContent = c.text;
+      cols[c.type].appendChild(liEl);
+    });
+  }
+
+  el("sol-toggle").addEventListener("click", function(){
+    var open = !el("sol-body").classList.contains("hidden");
+    if(open){ resetSolutionToggle(); }
+    else{
+      el("sol-body").classList.remove("hidden");
+      this.setAttribute("aria-expanded","true");
+      this.textContent = "Hide the correct types";
+    }
+  });
+
+  el("check-btn").addEventListener("click", check);
+  el("reset-btn").addEventListener("click", function(){
+    CRITERIA.forEach(function(c){ picks[c.id]=null; });
+    checked = false;
+    el("feedback").innerHTML = "";
+    el("solution-wrap").classList.add("hidden");
+    resetSolutionToggle();
+    clearMarks();
+    renderPicks();
+    var first = el("crit-list").querySelector("button.pick");
+    if(first){ first.focus(); }
+  });
+
+  buildCrit();
+  buildSolutionLists();
+
+  /* ---------- Zone 2: trace an output down through its diagnostics to its inputs ----------
+     Pure exploration; nothing here is checked. Payment volume drives revenue through the
+     take rate, and drives operating profit through the take rate, cost rate, and loss rate
+     together; operating expense is fixed and only ever feeds operating profit. Choosing which
+     output to trace changes which diagnostics and inputs light up \u2014 the same causal test
+     a hierarchy has to pass: every input needs a plausible path up to the output above it. */
+  var trace = "revenue";   // or "opprofit"
+  var volume = TPV;
+
+  function recompute(){
+    var revenue = volume * TAKE_RATE;
+    var cogs    = volume * COST_RATE;
+    var loss    = volume * LOSS_RATE;
+    var gross   = revenue - cogs - loss;
+    var opProfit= gross - OPEX;
+
+    el("val-vol").textContent  = usd(volume);
+    el("val-opex").textContent = usd(OPEX);
+    el("val-take").textContent = pct(TAKE_RATE,3);
+    el("val-cost").textContent = pct(COST_RATE,3);
+    el("val-loss").textContent = pct(LOSS_RATE,4);
+    el("val-rev").textContent  = usd(revenue);
+    el("val-op").textContent   = usd(opProfit);
+
+    el("sl-val").textContent = usd(volume);
+
+    renderTrace();
+  }
+
+  function setActive(id, on){
+    var node = el(id);
+    node.classList.toggle("active", on);
+    node.classList.toggle("inactive", !on);
+  }
+
+  function renderTrace(){
+    if(trace==="revenue"){
+      setActive("node-rev", true);
+      setActive("node-op", false);
+      setActive("node-take", true);
+      setActive("node-cost", false);
+      setActive("node-loss", false);
+      setActive("node-vol", true);
+      setActive("node-opex", false);
+      el("trace-hint").textContent = "Revenue is driven by volume through the take rate alone \u2014 the cost rate, the loss rate, and operating expense play no part in it.";
+      el("link-note").innerHTML =
+        "Tracing <b>revenue</b> downward stops at two nodes: the <b>take rate</b> and <b>payment volume</b>. Drag the slider and only that path moves \u2014 which is exactly how a leader knows where to look first when revenue disappoints.";
+    }else{
+      setActive("node-rev", false);
+      setActive("node-op", true);
+      setActive("node-take", true);
+      setActive("node-cost", true);
+      setActive("node-loss", true);
+      setActive("node-vol", true);
+      setActive("node-opex", true);
+      el("trace-hint").textContent = "Operating profit is the bottom line \u2014 every diagnostic and every input feeds it, because it is what remains after all three rates and the fixed expense are applied.";
+      el("link-note").innerHTML =
+        "Tracing <b>operating profit</b> lights up all five nodes below it. That is the hierarchy test in miniature: an output at the bottom of the P&amp;L has more drivers than one further up, so a bottom-line miss takes more digging to explain.";
+    }
+  }
+
+  el("trace-rev").addEventListener("click", function(){
+    trace = "revenue";
+    this.setAttribute("aria-pressed","true");
+    el("trace-op").setAttribute("aria-pressed","false");
+    renderTrace();
+  });
+  el("trace-op").addEventListener("click", function(){
+    trace = "opprofit";
+    this.setAttribute("aria-pressed","true");
+    el("trace-rev").setAttribute("aria-pressed","false");
+    renderTrace();
+  });
+
+  el("vol-range").value = volume;
+  el("vol-range").addEventListener("input", function(){
+    volume = Number(this.value);
+    recompute();
+  });
+  el("play-reset").addEventListener("click", function(){
+    volume = TPV;
+    el("vol-range").value = volume;
+    recompute();
+  });
+
+  recompute();
+
+})();
+</script>
+</body>
+</html>
