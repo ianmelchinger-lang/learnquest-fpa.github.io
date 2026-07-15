@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set the exit criteria for a budget gate</title>
+<style>
+  :root{
+    --page:#eef1f6;
+    --surface:#ffffff;
+    --surface-2:#f6f8fb;
+    --ink:#161f2e;
+    --ink-2:#4a5a70;
+    --ink-3:#6b7a90;
+    --line:#d5deea;
+    --line-2:#e6ecf4;
+    --accent:#1b4f8a;
+    --accent-dark:#123a68;
+    --accent-soft:#e7eff8;
+    --ok-ink:#166a41;
+    --ok-bg:#e6f4ec;
+    --ok-line:#b4dcc4;
+    --near-ink:#8a5300;
+    --near-bg:#fbf1dd;
+    --near-line:#eecf96;
+    --no-ink:#9e2833;
+    --no-bg:#fbe9eb;
+    --no-line:#eec2c7;
+    --hold:#b25a00;
+    --hold-bg:#fbf1e4;
+    --hold-line:#edcfa4;
+    --focus:#0b3d91;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+    font-size:16px;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:28px 20px 72px;}
+  h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;letter-spacing:-0.01em;}
+  h2{font-size:1.18rem;line-height:1.25;margin:0 0 4px;letter-spacing:-0.005em;}
+  h3{font-size:1rem;margin:0 0 6px;}
+  p{margin:0 0 12px;}
+  .lede{color:var(--ink-2);font-size:1.02rem;margin-bottom:18px;}
+  .eyebrow{
+    display:inline-block;font-size:0.72rem;font-weight:700;letter-spacing:0.09em;
+    text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
+    border-radius:999px;padding:4px 11px;margin-bottom:14px;
+  }
+  .slice{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 22px;}
+  .chip{
+    font-size:0.82rem;color:var(--ink-2);background:var(--surface);
+    border:1px solid var(--line);border-radius:8px;padding:5px 10px;
+  }
+  .chip b{color:var(--ink);font-weight:600;}
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:22px 22px 24px;margin:0 0 22px;
+    box-shadow:0 1px 2px rgba(20,40,70,0.04);
+  }
+  .zonehead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .zonetag{
+    font-size:0.72rem;font-weight:700;color:#ffffff;background:var(--accent);
+    border-radius:6px;padding:3px 8px;letter-spacing:0.04em;white-space:nowrap;
+  }
+  .zonetag.play{background:var(--ink-2);}
+  .muted{color:var(--ink-3);}
+
+  .defs{
+    background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;
+    padding:12px 14px;margin:0 0 16px;font-size:0.9rem;
+  }
+  .defs dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;}
+  .defs dt{font-weight:600;color:var(--ink);white-space:nowrap;}
+  .defs dd{margin:0;color:var(--ink-2);}
+
+  /* Zone 1 — criterion cards */
+  .crit-list{margin:12px 0 4px;padding:0;list-style:none;}
+  .crit{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:12px;
+    padding:12px 14px;margin:0 0 10px;
+  }
+  .crit-text{font-weight:600;font-size:0.98rem;margin:0 0 9px;}
+  .crit-text .q{color:var(--ink-2);font-weight:600;}
+  .choices{display:flex;flex-wrap:wrap;gap:8px;}
+  button.pick{
+    font:inherit;font-size:0.86rem;font-weight:700;cursor:pointer;
+    min-height:40px;border-radius:9px;padding:6px 12px;
+    border:1.5px solid var(--line);background:var(--surface-2);color:var(--accent-dark);
+  }
+  button.pick:hover{background:var(--accent-soft);}
+  button.pick[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:#fff;
+  }
+  .crit.marked-good{border-color:var(--ok-line);background:var(--ok-bg);}
+  .crit.marked-bad{border-color:var(--no-line);background:var(--no-bg);}
+  .crit-note{margin:9px 0 0;font-size:0.9rem;}
+  .crit.marked-good .crit-note{color:var(--ok-ink);}
+  .crit.marked-bad .crit-note{color:var(--no-ink);}
+  .crit-note:empty{display:none;}
+
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 2px;}
+  button{
+    font:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;
+    border-radius:10px;padding:11px 18px;min-height:44px;border:1.5px solid transparent;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-ghost{background:var(--surface);color:var(--accent-dark);border-color:var(--line);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-link{
+    background:none;border:none;color:var(--accent-dark);padding:8px 2px;
+    text-decoration:underline;text-underline-offset:3px;font-weight:600;min-height:auto;
+  }
+
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px;}
+
+  .feedback{margin-top:16px;border-radius:11px;padding:0;overflow:hidden;}
+  .feedback:empty{display:none;}
+  .fb-inner{padding:14px 16px;border:1.5px solid;border-radius:11px;font-size:0.96rem;}
+  .fb-title{font-weight:700;margin-bottom:5px;}
+  .fb-ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink);}
+  .fb-ok .fb-title{color:var(--ok-ink);}
+  .fb-near{background:var(--near-bg);border-color:var(--near-line);color:var(--near-ink);}
+  .fb-near .fb-title{color:var(--near-ink);}
+  .fb-no{background:var(--no-bg);border-color:var(--no-line);color:var(--no-ink);}
+  .fb-no .fb-title{color:var(--no-ink);}
+  .fb-list{margin:6px 0 0;padding:0 0 0 2px;list-style:none;}
+  .fb-list li{margin:0 0 7px;padding:0 0 0 16px;position:relative;}
+  .fb-list li::before{content:"\2013";position:absolute;left:0;top:0;}
+
+  .solution{margin-top:16px;}
+  .sol-body{
+    border:1px dashed var(--line);border-radius:11px;background:var(--surface-2);
+    padding:16px 18px;margin-top:10px;
+  }
+  .sol-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+  .sol-col h3{margin-bottom:8px;}
+  .sol-col ul{margin:0;padding:0 0 0 18px;color:var(--ink-2);font-size:0.92rem;}
+  .sol-col li{margin:0 0 6px;}
+  .sol-read{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2);color:var(--ink-2);font-size:0.92rem;}
+  .hidden{display:none;}
+
+  /* Zone 2 — the gate */
+  .gate-controls{
+    border:1px solid var(--line-2);background:var(--surface-2);border-radius:11px;
+    padding:12px 14px;margin:12px 0 16px;
+  }
+  .gate-controls .gc-lead{font-size:0.9rem;color:var(--ink-2);margin:0 0 10px;}
+  .toggles{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;}
+  .switch{display:flex;align-items:flex-start;gap:9px;font-size:0.88rem;color:var(--ink);}
+  .switch input{width:20px;height:20px;margin-top:1px;accent-color:var(--accent);cursor:pointer;flex:0 0 auto;}
+  .switch span{line-height:1.35;}
+
+  .subs{margin:6px 0 0;padding:0;list-style:none;}
+  .sub{
+    border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+    padding:12px 14px;margin:0 0 10px;
+  }
+  .sub-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px;}
+  .sub-name{font-weight:700;font-size:1rem;}
+  .sub-amt{font-size:0.8rem;color:var(--ink-3);}
+  .badge{
+    margin-left:auto;font-size:0.74rem;font-weight:700;letter-spacing:0.04em;
+    border-radius:999px;padding:4px 11px;white-space:nowrap;text-transform:uppercase;
+  }
+  .badge.pass{background:var(--ok-bg);color:var(--ok-ink);border:1px solid var(--ok-line);}
+  .badge.hold{background:var(--hold-bg);color:var(--hold);border:1px solid var(--hold-line);}
+  .sub-reason{font-size:0.88rem;color:var(--ink-2);margin:0;}
+  .sub-reason b{color:var(--hold);}
+  .gate-status{
+    margin-top:6px;border-radius:11px;border:1.5px solid var(--ok-line);
+    background:var(--ok-bg);color:var(--ok-ink);padding:12px 15px;font-weight:600;font-size:0.95rem;
+  }
+  .gate-status.some{border-color:var(--hold-line);background:var(--hold-bg);color:var(--hold);}
+  .gate-status.none{border-color:var(--near-line);background:var(--near-bg);color:var(--near-ink);}
+
+  footer{color:var(--ink-3);font-size:0.82rem;text-align:center;margin-top:6px;}
+
+  @media (max-width:480px){
+    body{font-size:15px;}
+    .wrap{padding:20px 14px 56px;}
+    h1{font-size:1.34rem;}
+    .card{padding:18px 15px 20px;border-radius:12px;}
+    .defs dl{grid-template-columns:1fr;gap:2px 0;}
+    .defs dt{margin-top:6px;}
+    .choices button.pick{flex:1 1 auto;}
+    .toggles{grid-template-columns:1fr;}
+    .sol-grid{grid-template-columns:1fr;}
+    .badge{margin-left:0;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <span class="eyebrow">Budget workflows</span>
+  <h1>Set the exit criteria for a budget gate</h1>
+  <p class="lede">When a company builds its yearly budget, each department fills in a template and hands it to finance. Before finance can add those pieces together, someone has to decide a submission is <em>complete</em> enough to move on. That checkpoint is a gate, and a gate only works if its rule for "complete" is one that two people, checking separately, would read the same way. Your job here is to tell those rules apart.</p>
+
+  <p class="muted" style="margin-bottom:16px;"><strong>FP&amp;A</strong> stands for financial planning and analysis, the team that plans and coordinates the budget. The trouble this activity is about is small but expensive: the word <strong>complete</strong> means different things to different people. A department head thinks a submission is done the moment it is sent; finance thinks it is done only when every field is filled and the assumptions are written down. A gate settles that argument, but only if its criteria can be checked the same way every time.</p>
+
+  <div class="defs">
+    <dl>
+      <dt>Budget cycle</dt><dd>The budget seen as a sequence of stages, not one event: set targets, send out templates, collect inputs, consolidate, review, revise, approve.</dd>
+      <dt>Consolidation</dt><dd>Adding every department's submitted template together into one company-wide budget.</dd>
+      <dt>Stage-gate</dt><dd>A checkpoint between two stages. Work moves past it only when set conditions are met.</dd>
+      <dt>Exit criterion</dt><dd>One condition a submission must meet to leave a stage. The gate is the full set of them.</dd>
+      <dt>Testable</dt><dd>A criterion is testable when it gives a plain yes or no. Two reviewers checking on their own reach the same answer.</dd>
+    </dl>
+  </div>
+
+  <div class="slice" aria-label="The gate in focus">
+    <span class="chip"><b>Organization:</b> Sample Enterprise Insurer</span>
+    <span class="chip"><b>Gate:</b> input collection &#8594; consolidation</span>
+    <span class="chip"><b>Question the gate answers:</b> is this template complete?</span>
+  </div>
+
+  <!-- ZONE 1 -->
+  <section class="card" aria-labelledby="z1h">
+    <div class="zonehead">
+      <span class="zonetag">Task</span>
+      <h2 id="z1h">Sort the candidate criteria</h2>
+    </div>
+    <p class="muted" style="margin-bottom:6px;">Below are eight rules someone proposed for the gate that lets a department's budget template pass into consolidation. Some are testable, so they can hold every department to the same standard. Others sound fine but can't be enforced, because two reviewers could disagree on whether they are met. For each one, choose <strong>put on the gate</strong> or <strong>too vague to enforce</strong>. When you have sorted all eight, check them.</p>
+
+    <ul class="crit-list" id="crit-list" aria-label="Eight candidate exit criteria to sort"></ul>
+
+    <div class="btnrow">
+      <button type="button" class="btn-primary" id="check-btn">Check the gate</button>
+      <button type="button" class="btn-ghost" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+    <div class="solution hidden" id="solution-wrap">
+      <button type="button" class="btn-link" id="sol-toggle" aria-expanded="false" aria-controls="sol-body">Show which is which</button>
+      <div class="sol-body hidden" id="sol-body">
+        <div class="sol-grid">
+          <div class="sol-col">
+            <h3>Put on the gate</h3>
+            <ul id="sol-good"></ul>
+          </div>
+          <div class="sol-col">
+            <h3>Too vague to enforce</h3>
+            <ul id="sol-bad"></ul>
+          </div>
+        </div>
+        <div class="sol-read">The test is always the same: would two reviewers, checking on their own, always reach the same yes or no? A version number, a filled cell, a documented assumption, and a total that foots all pass that test. "Reasonable," "basically complete," "comfortable," and "roughly in line" do not, because each reviewer draws the line somewhere different. A gate built on those never actually stops anything.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE 2 -->
+  <section class="card" aria-labelledby="z2h">
+    <div class="zonehead">
+      <span class="zonetag play">Explore</span>
+      <h2 id="z2h">Run the gate</h2>
+    </div>
+    <p class="muted" style="margin-bottom:6px;">There is no right or wrong here. Below are the four testable criteria as switches, and four departments that have just submitted their templates. Turn a criterion on to enforce it. Each department passes into consolidation or is held back, with the reason shown. Watch what a stricter gate catches, and what slips through when you relax it. The four submissions are illustrative, built to show the gate at work.</p>
+
+    <div class="gate-controls">
+      <p class="gc-lead">Criteria enforced at the gate:</p>
+      <div class="toggles" id="toggles"></div>
+    </div>
+
+    <ul class="subs" id="subs" aria-label="Four departmental submissions and their gate result"></ul>
+
+    <div class="gate-status" id="gate-status" role="status" aria-live="polite"></div>
+
+    <div class="btnrow">
+      <button type="button" class="btn-ghost" id="play-reset">Enforce all four criteria</button>
+    </div>
+  </section>
+
+  <footer>An ungraded practice activity. Explore for as long as you like, then close the tab whenever you are done.</footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  function el(id){ return document.getElementById(id); }
+
+  /* ---------- Content, drawn from this module ----------
+     The gate: input collection -> consolidation. The four roles disagree on
+     what "complete" means; testable exit criteria settle it. Testable examples
+     and the "looks reasonable" failure mode come straight from the module's
+     tutorial. Each criterion is either genuinely testable (a yes/no anyone can
+     check) or too vague to enforce. */
+  var CRITERIA = [
+    { id:"version", good:true,
+      text:"Submitted on the current template version (v3), not an earlier release.",
+      why:"You can read the version stamp and get a plain yes or no. It belongs on the gate." },
+    { id:"fields", good:true,
+      text:"Every mandatory field is filled \u2014 no blank headcount or driver cells.",
+      why:"You can check each required cell and see at once whether any is empty. Testable." },
+    { id:"assump", good:true,
+      text:"Key assumptions are written in the notes tab \u2014 growth rate, rate change, loss ratio.",
+      why:"Either those assumptions are recorded or they are not. Anyone can confirm it. Testable." },
+    { id:"foots", good:true,
+      text:"The template's line items add up to the total it reports (the sheet foots).",
+      why:"It is arithmetic: the parts either sum to the stated total or they do not. Testable." },
+    { id:"reason", good:false,
+      text:"The numbers look reasonable.",
+      why:"Two reviewers can disagree on what counts as reasonable, so it can't hold anyone to the gate. Ask instead: would they always reach the same yes or no?" },
+    { id:"basic", good:false,
+      text:"The submission is basically complete.",
+      why:"\u201cBasically\u201d has no line. One reviewer accepts it, another sends it back. Name the exact fields that must be filled instead." },
+    { id:"comfort", good:false,
+      text:"The department is comfortable with its own ask.",
+      why:"Comfort is a feeling, not a check \u2014 and whether a department likes its number is an approval-stage judgment, not a test of a complete template." },
+    { id:"rough", good:false,
+      text:"It is roughly in line with last year.",
+      why:"\u201cRoughly in line\u201d sets no threshold. Ten percent off? Thirty? Until you state the number, two reviewers will draw the line in different places." }
+  ];
+
+  var TESTABLE_IDS = CRITERIA.filter(function(c){ return c.good; }).map(function(c){ return c.id; });
+  var CRIT_BY = {};
+  CRITERIA.forEach(function(c){ CRIT_BY[c.id] = c; });
+
+  // Learner's bucket choice per criterion: "good" | "bad" | null
+  var picks = {};
+  CRITERIA.forEach(function(c){ picks[c.id] = null; });
+  var checked = false;
+
+  /* ---------- Zone 1: sort the criteria ---------- */
+  function buildCrit(){
+    var host = el("crit-list");
+    host.innerHTML = "";
+    CRITERIA.forEach(function(c){
+      var li = document.createElement("li");
+      li.className = "crit"; li.id = "crit-"+c.id;
+
+      var t = document.createElement("p");
+      t.className = "crit-text";
+      t.innerHTML = "<span class=\"q\">Can you enforce this?</span> " + esc(c.text);
+
+      var ch = document.createElement("div");
+      ch.className = "choices"; ch.setAttribute("role","group");
+      ch.setAttribute("aria-label", "Sort: " + c.text);
+
+      var g = document.createElement("button");
+      g.type = "button"; g.className = "pick"; g.textContent = "Put on the gate";
+      g.setAttribute("aria-pressed","false"); g.setAttribute("data-b","good");
+
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "pick"; b.textContent = "Too vague to enforce";
+      b.setAttribute("aria-pressed","false"); b.setAttribute("data-b","bad");
+
+      g.addEventListener("click", function(){ setPick(c.id,"good"); });
+      b.addEventListener("click", function(){ setPick(c.id,"bad"); });
+
+      ch.appendChild(g); ch.appendChild(b);
+
+      var note = document.createElement("p");
+      note.className = "crit-note"; note.id = "note-"+c.id;
+
+      li.appendChild(t); li.appendChild(ch); li.appendChild(note);
+      host.appendChild(li);
+    });
+    renderPicks();
+  }
+
+  function setPick(id, bucket){
+    picks[id] = bucket;
+    // Any change clears a prior check.
+    if(checked){
+      checked = false;
+      el("feedback").innerHTML = "";
+      el("solution-wrap").classList.add("hidden");
+      resetSolutionToggle();
+      clearMarks();
+    }
+    renderPicks();
+  }
+
+  function renderPicks(){
+    CRITERIA.forEach(function(c){
+      var li = el("crit-"+c.id);
+      var btns = li.querySelectorAll("button.pick");
+      btns.forEach(function(btn){
+        var on = btn.getAttribute("data-b") === picks[c.id];
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    });
+  }
+
+  function clearMarks(){
+    CRITERIA.forEach(function(c){
+      var li = el("crit-"+c.id);
+      li.classList.remove("marked-good","marked-bad");
+      el("note-"+c.id).textContent = "";
+    });
+  }
+
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function setFeedback(kind, title, listItems, closing){
+    var cls = kind==="ok" ? "fb-ok" : kind==="near" ? "fb-near" : "fb-no";
+    var html = "<div class=\"fb-inner "+cls+"\"><div class=\"fb-title\">"+title+"</div>";
+    if(listItems && listItems.length){
+      html += "<ul class=\"fb-list\">";
+      listItems.forEach(function(t){ html += "<li>"+t+"</li>"; });
+      html += "</ul>";
+    }
+    if(closing){ html += "<div>"+closing+"</div>"; }
+    html += "</div>";
+    el("feedback").innerHTML = html;
+  }
+
+  function check(){
+    // Require a choice on every criterion first.
+    var unsorted = CRITERIA.filter(function(c){ return picks[c.id]===null; });
+    if(unsorted.length){
+      setFeedback("near","Sort all eight first.",
+        null,
+        "You still have " + unsorted.length + " left to sort. Choose <strong>put on the gate</strong> or <strong>too vague to enforce</strong> for each, then check.");
+      return;
+    }
+
+    checked = true;
+    el("solution-wrap").classList.remove("hidden");
+    clearMarks();
+
+    var wrong = [];
+    CRITERIA.forEach(function(c){
+      var correctBucket = c.good ? "good" : "bad";
+      var li = el("crit-"+c.id);
+      if(picks[c.id] === correctBucket){
+        li.classList.add("marked-good");
+      }else{
+        li.classList.add("marked-bad");
+        el("note-"+c.id).textContent = c.why;
+        wrong.push(c);
+      }
+    });
+
+    if(wrong.length === 0){
+      setFeedback("ok","That is a gate you could enforce.",
+        null,
+        "Every rule you put on the gate gives a plain yes or no, so it holds every department to the same standard \u2014 the same check for Claims, Underwriting, Risk Advisory, and Finance alike. And you kept the four that only sound like standards off it. That single shared definition of <strong>complete</strong> is what settles the argument the four roles were having.");
+      return;
+    }
+
+    var kind = wrong.length === 1 ? "near" : "no";
+    var title = wrong.length === 1
+      ? "Close \u2014 one is in the wrong bucket."
+      : wrong.length + " are in the wrong bucket.";
+    var items = wrong.map(function(c){
+      return "<strong>" + esc(c.text) + "</strong> " + c.why;
+    });
+    setFeedback(kind, title, items,
+      "The first move is always the same: ask whether two reviewers, checking on their own, would reach the same yes or no. If they would, it can go on the gate.");
+  }
+
+  function resetSolutionToggle(){
+    var t = el("sol-toggle");
+    el("sol-body").classList.add("hidden");
+    t.setAttribute("aria-expanded","false");
+    t.textContent = "Show which is which";
+  }
+
+  function buildSolutionLists(){
+    var good = el("sol-good"), bad = el("sol-bad");
+    good.innerHTML = ""; bad.innerHTML = "";
+    CRITERIA.forEach(function(c){
+      var liEl = document.createElement("li");
+      liEl.textContent = c.text;
+      (c.good ? good : bad).appendChild(liEl);
+    });
+  }
+
+  el("sol-toggle").addEventListener("click", function(){
+    var open = !el("sol-body").classList.contains("hidden");
+    if(open){ resetSolutionToggle(); }
+    else{
+      el("sol-body").classList.remove("hidden");
+      this.setAttribute("aria-expanded","true");
+      this.textContent = "Hide which is which";
+    }
+  });
+
+  el("check-btn").addEventListener("click", check);
+  el("reset-btn").addEventListener("click", function(){
+    CRITERIA.forEach(function(c){ picks[c.id] = null; });
+    checked = false;
+    el("feedback").innerHTML = "";
+    el("solution-wrap").classList.add("hidden");
+    resetSolutionToggle();
+    clearMarks();
+    renderPicks();
+    var first = el("crit-list").querySelector("button.pick");
+    if(first){ first.focus(); }
+  });
+
+  buildCrit();
+  buildSolutionLists();
+
+  /* ---------- Zone 2: run the gate ----------
+     Four illustrative submissions. Each department's template either meets or
+     misses each testable criterion. Built so every switch visibly controls at
+     least one department's fate; the requested totals are illustrative and are
+     not part of any check. */
+  var SUBS = [
+    { id:"claims", name:"Claims", amt:"$46.2M requested",
+      meets:{ version:true, fields:true, assump:true, foots:true } },
+    { id:"underwriting", name:"Underwriting", amt:"$31.8M requested",
+      meets:{ version:false, fields:true, assump:true, foots:true },
+      missNote:{ version:"submitted on the old v2 template" } },
+    { id:"risk", name:"Risk Advisory", amt:"$12.5M requested",
+      meets:{ version:true, fields:true, assump:false, foots:true },
+      missNote:{ assump:"notes tab left blank, no assumptions written down" } },
+    { id:"finance", name:"Finance", amt:"$18.9M requested",
+      meets:{ version:true, fields:false, assump:true, foots:false },
+      missNote:{ fields:"two headcount cells left empty", foots:"line items do not add up to the stated total" } }
+  ];
+
+  // Criterion short names for the switches and the hold reasons.
+  var CRIT_SHORT = {
+    version:"On the current template version",
+    fields:"All mandatory fields filled",
+    assump:"Assumptions documented",
+    foots:"Line items foot to the total"
+  };
+
+  // Enforced state per testable criterion.
+  var enforce = { version:true, fields:true, assump:true, foots:true };
+
+  function buildToggles(){
+    var host = el("toggles");
+    host.innerHTML = "";
+    TESTABLE_IDS.forEach(function(id){
+      var label = document.createElement("label");
+      label.className = "switch";
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = true; cb.id = "en-"+id;
+      cb.setAttribute("aria-label","Enforce: " + CRIT_SHORT[id]);
+      var span = document.createElement("span");
+      span.textContent = CRIT_SHORT[id];
+      cb.addEventListener("change", function(){
+        enforce[id] = this.checked;
+        renderGate();
+      });
+      label.appendChild(cb); label.appendChild(span);
+      host.appendChild(label);
+    });
+  }
+
+  function buildSubs(){
+    var host = el("subs");
+    host.innerHTML = "";
+    SUBS.forEach(function(s){
+      var li = document.createElement("li");
+      li.className = "sub"; li.id = "sub-"+s.id;
+
+      var head = document.createElement("div");
+      head.className = "sub-head";
+      var nm = document.createElement("span"); nm.className = "sub-name"; nm.textContent = s.name;
+      var amt = document.createElement("span"); amt.className = "sub-amt"; amt.textContent = s.amt + " (illustrative)";
+      var badge = document.createElement("span"); badge.className = "badge"; badge.id = "badge-"+s.id;
+      head.appendChild(nm); head.appendChild(amt); head.appendChild(badge);
+
+      var reason = document.createElement("p");
+      reason.className = "sub-reason"; reason.id = "reason-"+s.id;
+
+      li.appendChild(head); li.appendChild(reason);
+      host.appendChild(li);
+    });
+  }
+
+  function renderGate(){
+    var held = 0, anyEnforced = false;
+    TESTABLE_IDS.forEach(function(id){ if(enforce[id]) anyEnforced = true; });
+
+    SUBS.forEach(function(s){
+      // A submission is held if any enforced criterion it fails to meet.
+      var failing = TESTABLE_IDS.filter(function(id){
+        return enforce[id] && !s.meets[id];
+      });
+      var badge = el("badge-"+s.id);
+      var reason = el("reason-"+s.id);
+      var li = el("sub-"+s.id);
+
+      if(failing.length === 0){
+        badge.className = "badge pass"; badge.textContent = "Passes";
+        li.style.borderColor = "";
+        if(anyEnforced){
+          reason.innerHTML = "Clears every criterion in force. Moves into consolidation.";
+        }else{
+          reason.innerHTML = "No criterion is in force, so nothing is checked. It moves through by default.";
+        }
+      }else{
+        held++;
+        badge.className = "badge hold"; badge.textContent = "Held";
+        var parts = failing.map(function(id){
+          var note = (s.missNote && s.missNote[id]) ? " (" + s.missNote[id] + ")" : "";
+          return "<b>" + CRIT_SHORT[id].toLowerCase() + "</b>" + note;
+        });
+        reason.innerHTML = "Held back \u2014 fails: " + parts.join("; ") + ".";
+      }
+    });
+
+    var status = el("gate-status");
+    status.classList.remove("some","none");
+    if(!anyEnforced){
+      status.classList.add("none");
+      status.textContent = "No criteria enforced. Every template flows into consolidation unchecked \u2014 including the stale and incomplete ones.";
+    }else if(held === 0){
+      status.textContent = "All four submissions pass the criteria you are enforcing. Consolidation can begin.";
+    }else{
+      status.classList.add("some");
+      status.textContent = held + " of 4 held back. Those departments fix and resubmit before their numbers enter the company budget.";
+    }
+  }
+
+  el("play-reset").addEventListener("click", function(){
+    TESTABLE_IDS.forEach(function(id){
+      enforce[id] = true;
+      var cb = el("en-"+id); if(cb) cb.checked = true;
+    });
+    renderGate();
+  });
+
+  buildToggles();
+  buildSubs();
+  renderGate();
+
+})();
+</script>
+</body>
+</html>
