@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find the true drivers in a real payments book</title>
+<style>
+  :root{
+    --page:#eef1f6;
+    --surface:#ffffff;
+    --surface-2:#f6f8fb;
+    --ink:#161f2e;
+    --ink-2:#4a5a70;
+    --ink-3:#6b7a90;
+    --line:#d5deea;
+    --line-2:#e6ecf4;
+    --accent:#1b4f8a;
+    --accent-dark:#123a68;
+    --accent-soft:#e7eff8;
+    --ok-ink:#166a41;
+    --ok-bg:#e6f4ec;
+    --ok-line:#b4dcc4;
+    --near-ink:#8a5300;
+    --near-bg:#fbf1dd;
+    --near-line:#eecf96;
+    --no-ink:#9e2833;
+    --no-bg:#fbe9eb;
+    --no-line:#eec2c7;
+    --focus:#0b3d91;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+    font-size:16px;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:28px 20px 72px;}
+  h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;letter-spacing:-0.01em;}
+  h2{font-size:1.18rem;line-height:1.25;margin:0 0 4px;letter-spacing:-0.005em;}
+  h3{font-size:1rem;margin:0 0 6px;}
+  p{margin:0 0 12px;}
+  .lede{color:var(--ink-2);font-size:1.02rem;margin-bottom:18px;}
+  .eyebrow{
+    display:inline-block;font-size:0.72rem;font-weight:700;letter-spacing:0.09em;
+    text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
+    border-radius:999px;padding:4px 11px;margin-bottom:14px;
+  }
+  .slice{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 22px;}
+  .chip{
+    font-size:0.82rem;color:var(--ink-2);background:var(--surface);
+    border:1px solid var(--line);border-radius:8px;padding:5px 10px;
+  }
+  .chip b{color:var(--ink);font-weight:600;}
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:22px 22px 24px;margin:0 0 22px;
+    box-shadow:0 1px 2px rgba(20,40,70,0.04);
+  }
+  .zonehead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .zonetag{
+    font-size:0.72rem;font-weight:700;color:#ffffff;background:var(--accent);
+    border-radius:6px;padding:3px 8px;letter-spacing:0.04em;white-space:nowrap;
+  }
+  .zonetag.play{background:var(--ink-2);}
+  .muted{color:var(--ink-3);}
+
+  .defs{
+    background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;
+    padding:12px 14px;margin:0 0 16px;font-size:0.9rem;
+  }
+  .defs dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;}
+  .defs dt{font-weight:600;color:var(--ink);white-space:nowrap;}
+  .defs dd{margin:0;color:var(--ink-2);}
+
+  /* Zone 1 — sortable candidate cards */
+  .crit-list{margin:12px 0 4px;padding:0;list-style:none;}
+  .crit{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:12px;
+    padding:12px 14px;margin:0 0 10px;
+  }
+  .crit-text{font-weight:600;font-size:0.98rem;margin:0 0 3px;}
+  .crit-text .q{color:var(--ink-2);font-weight:600;}
+  .crit-sub{font-size:0.86rem;color:var(--ink-3);margin:0 0 9px;}
+  .choices{display:flex;flex-wrap:wrap;gap:8px;}
+  button.pick{
+    font:inherit;font-size:0.86rem;font-weight:700;cursor:pointer;
+    min-height:40px;border-radius:9px;padding:6px 12px;
+    border:1.5px solid var(--line);background:var(--surface-2);color:var(--accent-dark);
+  }
+  button.pick:hover{background:var(--accent-soft);}
+  button.pick[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:#fff;
+  }
+  .crit.marked-good{border-color:var(--ok-line);background:var(--ok-bg);}
+  .crit.marked-bad{border-color:var(--no-line);background:var(--no-bg);}
+  .crit-note{margin:9px 0 0;font-size:0.9rem;}
+  .crit.marked-good .crit-note{color:var(--ok-ink);}
+  .crit.marked-bad .crit-note{color:var(--no-ink);}
+  .crit-note:empty{display:none;}
+
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 2px;}
+  button{
+    font:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;
+    border-radius:10px;padding:11px 18px;min-height:44px;border:1.5px solid transparent;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-ghost{background:var(--surface);color:var(--accent-dark);border-color:var(--line);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-link{
+    background:none;border:none;color:var(--accent-dark);padding:8px 2px;
+    text-decoration:underline;text-underline-offset:3px;font-weight:600;min-height:auto;
+  }
+
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px;}
+
+  .feedback{margin-top:16px;border-radius:11px;padding:0;overflow:hidden;}
+  .feedback:empty{display:none;}
+  .fb-inner{padding:14px 16px;border:1.5px solid;border-radius:11px;font-size:0.96rem;}
+  .fb-title{font-weight:700;margin-bottom:5px;}
+  .fb-ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink);}
+  .fb-ok .fb-title{color:var(--ok-ink);}
+  .fb-near{background:var(--near-bg);border-color:var(--near-line);color:var(--near-ink);}
+  .fb-near .fb-title{color:var(--near-ink);}
+  .fb-no{background:var(--no-bg);border-color:var(--no-line);color:var(--no-ink);}
+  .fb-no .fb-title{color:var(--no-ink);}
+  .fb-list{margin:6px 0 0;padding:0 0 0 2px;list-style:none;}
+  .fb-list li{margin:0 0 7px;padding:0 0 0 16px;position:relative;}
+  .fb-list li::before{content:"\2013";position:absolute;left:0;top:0;}
+
+  .solution{margin-top:16px;}
+  .sol-body{
+    border:1px dashed var(--line);border-radius:11px;background:var(--surface-2);
+    padding:16px 18px;margin-top:10px;
+  }
+  .sol-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+  .sol-col h3{margin-bottom:8px;}
+  .sol-col ul{margin:0;padding:0 0 0 18px;color:var(--ink-2);font-size:0.92rem;}
+  .sol-col li{margin:0 0 6px;}
+  .sol-read{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2);color:var(--ink-2);font-size:0.92rem;}
+  .hidden{display:none;}
+
+  /* Zone 2 — driver-based model */
+  .layer-label{
+    font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--ink-3);margin:0 0 8px;
+  }
+  .sliders{margin:0 0 18px;}
+  .slider-row{
+    border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+    padding:12px 14px;margin:0 0 12px;
+  }
+  .slider-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .slider-name{font-weight:700;font-size:0.95rem;}
+  .slider-val{font-weight:700;font-size:1rem;color:var(--accent-dark);font-variant-numeric:tabular-nums;}
+  .slider-hint{font-size:0.82rem;color:var(--ink-3);margin:0 0 8px;}
+  input[type="range"]{
+    width:100%;height:28px;cursor:pointer;accent-color:var(--accent);
+  }
+
+  .arrow-down{
+    text-align:center;color:var(--ink-3);font-size:0.86rem;margin:2px 0 16px;
+  }
+
+  .results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:0 0 6px;}
+  .result{
+    border:1.5px solid var(--line);border-radius:12px;background:var(--surface-2);
+    padding:12px 12px 10px;text-align:center;
+  }
+  .result.final{background:var(--accent-soft);border-color:var(--accent);}
+  .result-label{font-size:0.76rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;}
+  .result-val{font-size:1.14rem;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .result.final .result-val{color:var(--accent-dark);}
+  .margin-line{
+    margin-top:12px;border-radius:11px;border:1.5px solid var(--line-2);
+    background:var(--surface-2);color:var(--ink-2);padding:11px 14px;font-size:0.92rem;
+    font-variant-numeric:tabular-nums;
+  }
+  .margin-line b{color:var(--ink);}
+
+  footer{color:var(--ink-3);font-size:0.82rem;text-align:center;margin-top:6px;}
+
+  @media (max-width:480px){
+    body{font-size:15px;}
+    .wrap{padding:20px 14px 56px;}
+    h1{font-size:1.34rem;}
+    .card{padding:18px 15px 20px;border-radius:12px;}
+    .defs dl{grid-template-columns:1fr;gap:2px 0;}
+    .defs dt{margin-top:6px;}
+    .choices button.pick{flex:1 1 auto;}
+    .sol-grid{grid-template-columns:1fr;}
+    .results{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <span class="eyebrow">Driver-based planning</span>
+  <h1>Find the true drivers in a real payments book</h1>
+  <p class="lede">A static budget is a list of numbers: no formula connects them, so a "what if" question means rebuilding by hand. A driver-based budget is built in layers instead \u2014 a small set of operational inputs you can set, and a chain of formulas that calculates everything else from them. The hard part is knowing which is which. Below is a real payments business's numbers, drawn straight from its books. Your job is to sort them into what you can set and what the model calculates for you.</p>
+
+  <p class="muted" style="margin-bottom:16px;">FP&amp;A stands for financial planning and analysis. A budget organized by accounting category \u2014 a fixed number for "revenue," another for "cost" \u2014 cannot answer a scenario question, because nothing in it says how one number moves another. A budget organized around <strong>drivers</strong> can, because the drivers are the causes and the rest of the model is built to calculate the effects. A few terms before you start.</p>
+
+  <div class="defs">
+    <dl>
+      <dt>Driver</dt><dd>An operational number you set as an assumption \u2014 change it, and everything downstream recalculates.</dd>
+      <dt>Calculated output</dt><dd>A number the model produces from the drivers above it. You read it; you don't set it directly.</dd>
+      <dt>Take rate</dt><dd>The share of each dollar of payment volume the company keeps as revenue.</dd>
+      <dt>Cost rate</dt><dd>A cost expressed as a percent of revenue, so it scales automatically as revenue moves.</dd>
+      <dt>Driver-based model</dt><dd>A model built in three layers: drivers you set, formulas that calculate from them, and the results those formulas produce.</dd>
+    </dl>
+  </div>
+
+  <div class="slice" aria-label="What this book covers">
+    <span class="chip"><b>Business:</b> a payments processing platform</span>
+    <span class="chip"><b>Data:</b> 12 months, 6 countries, 5 products</span>
+    <span class="chip"><b>Question:</b> what can you set, and what does the model calculate?</span>
+  </div>
+
+  <!-- ZONE 1 -->
+  <section class="card" aria-labelledby="z1h">
+    <div class="zonehead">
+      <span class="zonetag">Task</span>
+      <h2 id="z1h">Sort the book's numbers</h2>
+    </div>
+    <p class="muted" style="margin-bottom:6px;">Below are eight numbers that appear in this business's real budget-versus-actual workbook. Some are drivers: operational assumptions an analyst sets, which the model uses to calculate everything else. Others are calculated outputs: results the model produces, which you never set directly because they already come from the drivers above them. Sort all eight, then check your gate.</p>
+
+    <ul class="crit-list" id="crit-list" aria-label="Eight real budget-book figures to sort"></ul>
+
+    <div class="btnrow">
+      <button type="button" class="btn-primary" id="check-btn">Check the sort</button>
+      <button type="button" class="btn-ghost" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+    <div class="solution hidden" id="solution-wrap">
+      <button type="button" class="btn-link" id="sol-toggle" aria-expanded="false" aria-controls="sol-body">Show which is which</button>
+      <div class="sol-body hidden" id="sol-body">
+        <div class="sol-grid">
+          <div class="sol-col">
+            <h3>Drivers \u2014 you set these</h3>
+            <ul id="sol-good"></ul>
+          </div>
+          <div class="sol-col">
+            <h3>Calculated outputs \u2014 the model produces these</h3>
+            <ul id="sol-bad"></ul>
+          </div>
+        </div>
+        <div class="sol-read">The test is always the same: if this number changed, would everything below it need to be recalculated \u2014 or is this number itself the result of a calculation? Volume, take rate, and the two cost rates are the assumptions a planner sets going forward. Revenue, gross profit, operating profit, and a variance percent are all arithmetic performed on those assumptions after the fact; none of them can be an input without double-counting the drivers that already produced them.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE 2 -->
+  <section class="card" aria-labelledby="z2h">
+    <div class="zonehead">
+      <span class="zonetag play">Explore</span>
+      <h2 id="z2h">Move a driver, watch the model recalculate</h2>
+    </div>
+    <p class="muted" style="margin-bottom:6px;">There is no right or wrong here. The three sliders below start at this business's real current monthly figures. Drag any one and every number beneath it recalculates immediately through the same formulas a driver-based model runs \u2014 no rebuilding, no re-keying. That instant recalculation, not the specific numbers, is the whole point of the exercise.</p>
+
+    <p class="layer-label">Input layer \u2014 drivers you set</p>
+    <div class="sliders" id="sliders"></div>
+
+    <div class="arrow-down" aria-hidden="true">\u2193 the model recalculates instantly \u2193</div>
+
+    <p class="layer-label">Calculation &amp; output layer \u2014 what the model produces</p>
+    <div class="results" id="results"></div>
+    <div class="margin-line" id="margin-line"></div>
+
+    <div class="btnrow">
+      <button type="button" class="btn-ghost" id="play-reset">Return sliders to the book's real numbers</button>
+    </div>
+  </section>
+
+  <footer>An ungraded practice activity. Explore for as long as you like, then close the tab whenever you are done.</footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  /* ---------- Zone 1: sort real fields from the payments book's actual budget-detail workbook ----------
+     Figures are drawn from the real 12-month, 6-country, 5-product Budget Detail dataset that backs
+     this course. Drivers are the operational assumptions a planner sets; outputs are what the model
+     calculates from them. Nothing here is invented \u2014 the categories and rates match the source data. */
+  var CRITERIA = [
+    { id:"tpv", good:true,
+      text:"Total payment volume (TPV): the dollar amount of payments processed in a month.",
+      sub:"Actual book figure: roughly $518.2M per month, averaged across 12 months.",
+      why:"This is the raw operational lever \u2014 the volume moving through the platform. Every other line in the model is calculated from it. It belongs on the input layer." },
+    { id:"take", good:true,
+      text:"Take rate: the percent of processed volume kept as revenue.",
+      sub:"Actual book figure: about 0.70% of volume.",
+      why:"An analyst sets this rate as an assumption. Change it, and revenue recalculates instantly \u2014 that responsiveness is what makes it a driver." },
+    { id:"cogs", good:true,
+      text:"Processing cost rate: cost of goods sold as a percent of revenue.",
+      sub:"Actual book figure: about 29.5% of revenue.",
+      why:"This is a cost-efficiency assumption the model uses to calculate cost from revenue. It is set, not produced." },
+    { id:"opex", good:true,
+      text:"Operating expense rate: day-to-day operating cost as a percent of revenue.",
+      sub:"Actual book figure: about 41.4% of revenue.",
+      why:"Another cost-structure assumption. Like the processing cost rate, it feeds the calculation layer rather than coming out of it." },
+    { id:"revenue", good:false,
+      text:"Revenue.",
+      sub:"Actual book figure: about $3.6M per month, in aggregate.",
+      why:"Revenue is calculated by multiplying volume by the take rate. Setting it directly would double-count the two drivers that already produce it." },
+    { id:"gp", good:false,
+      text:"Gross profit.",
+      sub:"Actual book figure: revenue minus processing cost minus loss provision.",
+      why:"This is a subtotal further down the same formula chain \u2014 it only reports what the drivers above have already produced." },
+    { id:"opr", good:false,
+      text:"Operating profit.",
+      sub:"Actual book figure: gross profit minus operating expense.",
+      why:"This is the bottom-line result of the whole cascade. There is no assumption behind it, only the arithmetic of the lines above it." },
+    { id:"var", good:false,
+      text:"Revenue variance percent (actual versus budget).",
+      sub:"A comparison calculated after both an actual and a budget figure exist.",
+      why:"A variance can't be an input \u2014 it doesn't exist until both an actual number and a budget number are already on the page. It reports, it doesn't drive." }
+  ];
+
+  var CRIT_BY = {};
+  CRITERIA.forEach(function(c){ CRIT_BY[c.id] = c; });
+
+  var picks = {};
+  CRITERIA.forEach(function(c){ picks[c.id] = null; });
+  var checked = false;
+
+  function buildCrit(){
+    var host = el("crit-list");
+    host.innerHTML = "";
+    CRITERIA.forEach(function(c){
+      var li = document.createElement("li");
+      li.className = "crit"; li.id = "crit-"+c.id;
+
+      var t = document.createElement("p");
+      t.className = "crit-text";
+      t.innerHTML = "<span class=\"q\">Driver, or output?</span> " + esc(c.text);
+
+      var sub = document.createElement("p");
+      sub.className = "crit-sub"; sub.textContent = c.sub;
+
+      var ch = document.createElement("div");
+      ch.className = "choices"; ch.setAttribute("role","group");
+      ch.setAttribute("aria-label", "Sort: " + c.text);
+
+      var g = document.createElement("button");
+      g.type = "button"; g.className = "pick"; g.textContent = "Driver \u2014 I set it";
+      g.setAttribute("aria-pressed","false"); g.setAttribute("data-b","good");
+
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "pick"; b.textContent = "Output \u2014 the model calculates it";
+      b.setAttribute("aria-pressed","false"); b.setAttribute("data-b","bad");
+
+      g.addEventListener("click", function(){ setPick(c.id,"good"); });
+      b.addEventListener("click", function(){ setPick(c.id,"bad"); });
+
+      ch.appendChild(g); ch.appendChild(b);
+
+      var note = document.createElement("p");
+      note.className = "crit-note"; note.id = "note-"+c.id;
+
+      li.appendChild(t); li.appendChild(sub); li.appendChild(ch); li.appendChild(note);
+      host.appendChild(li);
+    });
+    renderPicks();
+  }
+
+  function setPick(id, bucket){
+    picks[id] = bucket;
+    if(checked){
+      checked = false;
+      el("feedback").innerHTML = "";
+      el("solution-wrap").classList.add("hidden");
+      resetSolutionToggle();
+      clearMarks();
+    }
+    renderPicks();
+  }
+
+  function renderPicks(){
+    CRITERIA.forEach(function(c){
+      var li = el("crit-"+c.id);
+      var btns = li.querySelectorAll("button.pick");
+      btns.forEach(function(btn){
+        var on = btn.getAttribute("data-b") === picks[c.id];
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    });
+  }
+
+  function clearMarks(){
+    CRITERIA.forEach(function(c){
+      var li = el("crit-"+c.id);
+      li.classList.remove("marked-good","marked-bad");
+      el("note-"+c.id).textContent = "";
+    });
+  }
+
+  function setFeedback(kind, title, listItems, closing){
+    var cls = kind==="ok" ? "fb-ok" : kind==="near" ? "fb-near" : "fb-no";
+    var html = "<div class=\"fb-inner "+cls+"\"><div class=\"fb-title\">"+title+"</div>";
+    if(listItems && listItems.length){
+      html += "<ul class=\"fb-list\">";
+      listItems.forEach(function(t){ html += "<li>"+t+"</li>"; });
+      html += "</ul>";
+    }
+    if(closing){ html += "<div>"+closing+"</div>"; }
+    html += "</div>";
+    el("feedback").innerHTML = html;
+  }
+
+  function check(){
+    var unsorted = CRITERIA.filter(function(c){ return picks[c.id]===null; });
+    if(unsorted.length){
+      setFeedback("near","Sort all eight first.",
+        null,
+        "You still have " + unsorted.length + " left to sort. Choose <strong>driver</strong> or <strong>output</strong> for each, then check.");
+      return;
+    }
+
+    checked = true;
+    el("solution-wrap").classList.remove("hidden");
+    clearMarks();
+
+    var wrong = [];
+    CRITERIA.forEach(function(c){
+      var correctBucket = c.good ? "good" : "bad";
+      var li = el("crit-"+c.id);
+      if(picks[c.id] === correctBucket){
+        li.classList.add("marked-good");
+      }else{
+        li.classList.add("marked-bad");
+        el("note-"+c.id).textContent = c.why;
+        wrong.push(c);
+      }
+    });
+
+    if(wrong.length === 0){
+      setFeedback("ok","That's a real driver-based split.",
+        null,
+        "Volume, take rate, and the two cost rates are the assumptions that belong in the input layer \u2014 set any one of them and the rest of the model recalculates. Revenue, gross profit, operating profit, and the variance percent all come out of the calculation layer instead of feeding it. That distinction is what lets a driver-based model answer a scenario question by changing one cell, instead of rebuilding the whole budget by hand.");
+      return;
+    }
+
+    var kind = wrong.length === 1 ? "near" : "no";
+    var title = wrong.length === 1
+      ? "Close \u2014 one is in the wrong layer."
+      : wrong.length + " are in the wrong layer.";
+    var items = wrong.map(function(c){
+      return "<strong>" + esc(c.text) + "</strong> " + c.why;
+    });
+    setFeedback(kind, title, items,
+      "The first move is always the same: ask whether this number, if changed, forces a recalculation below it \u2014 or whether it only exists because something above it was already calculated.");
+  }
+
+  function resetSolutionToggle(){
+    var t = el("sol-toggle");
+    el("sol-body").classList.add("hidden");
+    t.setAttribute("aria-expanded","false");
+    t.textContent = "Show which is which";
+  }
+
+  function buildSolutionLists(){
+    var good = el("sol-good"), bad = el("sol-bad");
+    good.innerHTML = ""; bad.innerHTML = "";
+    CRITERIA.forEach(function(c){
+      var liEl = document.createElement("li");
+      liEl.textContent = c.text;
+      (c.good ? good : bad).appendChild(liEl);
+    });
+  }
+
+  el("sol-toggle").addEventListener("click", function(){
+    var open = !el("sol-body").classList.contains("hidden");
+    if(open){ resetSolutionToggle(); }
+    else{
+      el("sol-body").classList.remove("hidden");
+      this.setAttribute("aria-expanded","true");
+      this.textContent = "Hide which is which";
+    }
+  });
+
+  el("check-btn").addEventListener("click", check);
+  el("reset-btn").addEventListener("click", function(){
+    CRITERIA.forEach(function(c){ picks[c.id] = null; });
+    checked = false;
+    el("feedback").innerHTML = "";
+    el("solution-wrap").classList.add("hidden");
+    resetSolutionToggle();
+    clearMarks();
+    renderPicks();
+    var first = el("crit-list").querySelector("button.pick");
+    if(first){ first.focus(); }
+  });
+
+  buildCrit();
+  buildSolutionLists();
+
+  /* ---------- Zone 2: the driver-based model, live ----------
+     Baselines are the real 12-month aggregate from the same Budget Detail workbook:
+     total volume / 12 months = TPV; revenue / TPV = take rate; (COGS + loss provision +
+     opex) / revenue = the combined cost rate. Revenue = TPV x take rate; Operating profit
+     = Revenue x (1 - cost rate). Verified in code to tie to the book's real monthly average
+     within rounding. This zone is pure exploration; nothing here is checked. */
+  var BASE_TPV = 518235385;      // real: $6,218,824,626 total volume / 12 months
+  var BASE_TAKE = 0.696;         // real: 0.6957% revenue/volume, rounded to 3 decimals
+  var BASE_COST = 72.7;          // real: 72.73% (COGS+loss+opex)/revenue, rounded to 1 decimal
+
+  var SLIDERS = [
+    { id:"tpv", label:"Monthly payment volume (TPV)", hint:"The dollar amount of payments processed this month.",
+      min:350000000, max:700000000, step:1000000, value:BASE_TPV, fmt:"usd" },
+    { id:"take", label:"Take rate", hint:"The percent of that volume kept as revenue.",
+      min:0.50, max:0.90, step:0.001, value:BASE_TAKE, fmt:"pct3" },
+    { id:"cost", label:"Combined cost rate", hint:"Processing cost, loss reserve, and operating expense together, as a percent of revenue.",
+      min:65, max:80, step:0.1, value:BASE_COST, fmt:"pct1" }
+  ];
+
+  var state = {};
+  SLIDERS.forEach(function(s){ state[s.id] = s.value; });
+
+  function fmtUSD(n){ return "$" + Math.round(n).toLocaleString("en-US"); }
+  function fmtPct(n, d){ return n.toLocaleString("en-US", {minimumFractionDigits:d, maximumFractionDigits:d}) + "%"; }
+  function fmtVal(s){
+    if(s.fmt === "usd") return fmtUSD(state[s.id]);
+    if(s.fmt === "pct3") return fmtPct(state[s.id], 3);
+    if(s.fmt === "pct1") return fmtPct(state[s.id], 1);
+    return String(state[s.id]);
+  }
+
+  function buildSliders(){
+    var host = el("sliders");
+    host.innerHTML = "";
+    SLIDERS.forEach(function(s){
+      var row = document.createElement("div");
+      row.className = "slider-row";
+
+      var top = document.createElement("div");
+      top.className = "slider-top";
+      var nm = document.createElement("span"); nm.className = "slider-name"; nm.textContent = s.label;
+      var val = document.createElement("span"); val.className = "slider-val"; val.id = "val-"+s.id;
+      val.textContent = fmtVal(s);
+      top.appendChild(nm); top.appendChild(val);
+
+      var hint = document.createElement("p");
+      hint.className = "slider-hint"; hint.textContent = s.hint;
+
+      var input = document.createElement("input");
+      input.type = "range"; input.id = "sl-"+s.id;
+      input.min = s.min; input.max = s.max; input.step = s.step; input.value = s.value;
+      input.setAttribute("aria-label", s.label + ": " + s.hint);
+
+      input.addEventListener("input", function(){
+        state[s.id] = Number(this.value);
+        el("val-"+s.id).textContent = fmtVal(s);
+        recalc();
+      });
+
+      row.appendChild(top); row.appendChild(hint); row.appendChild(input);
+      host.appendChild(row);
+    });
+  }
+
+  var RESULTS = [
+    { id:"revenue", label:"Revenue" },
+    { id:"cost", label:"Total cost" },
+    { id:"profit", label:"Operating profit", final:true }
+  ];
+
+  function buildResults(){
+    var host = el("results");
+    host.innerHTML = "";
+    RESULTS.forEach(function(r){
+      var box = document.createElement("div");
+      box.className = "result" + (r.final ? " final" : "");
+      var lab = document.createElement("div"); lab.className = "result-label"; lab.textContent = r.label;
+      var v = document.createElement("div"); v.className = "result-val"; v.id = "res-"+r.id;
+      box.appendChild(lab); box.appendChild(v);
+      host.appendChild(box);
+    });
+  }
+
+  function recalc(){
+    var tpv = state.tpv;
+    var take = state.take / 100;
+    var cost = state.cost / 100;
+
+    var revenue = tpv * take;
+    var totalCost = revenue * cost;
+    var profit = revenue - totalCost;
+    var margin = revenue > 0 ? (profit / revenue * 100) : 0;
+
+    el("res-revenue").textContent = fmtUSD(revenue);
+    el("res-cost").textContent = fmtUSD(totalCost);
+    el("res-profit").textContent = fmtUSD(profit);
+
+    el("margin-line").innerHTML =
+      "Operating margin: <b>" + fmtPct(margin,1) + "</b> of revenue \u2014 for every dollar this platform processes, about <b>" +
+      fmtPct(take*100,3) + "</b> becomes revenue, and " + fmtPct(margin*take,4) + " of the original dollar reaches operating profit.";
+  }
+
+  el("play-reset").addEventListener("click", function(){
+    SLIDERS.forEach(function(s){
+      state[s.id] = s.value;
+      var input = el("sl-"+s.id); if(input) input.value = s.value;
+      var v = el("val-"+s.id); if(v) v.textContent = fmtVal(s);
+    });
+    recalc();
+  });
+
+  buildSliders();
+  buildResults();
+  recalc();
+
+})();
+</script>
+</body>
+</html>
