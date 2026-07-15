@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find the driver that moves the plan most</title>
+<style>
+  :root{
+    --page:#eef1f6;
+    --surface:#ffffff;
+    --surface-2:#f6f8fb;
+    --ink:#161f2e;
+    --ink-2:#4a5a70;
+    --ink-3:#6b7a90;
+    --line:#d5deea;
+    --line-2:#e6ecf4;
+    --accent:#1b4f8a;
+    --accent-dark:#123a68;
+    --accent-soft:#e7eff8;
+    --up-ink:#166a41;
+    --up-bar:#3f9e6b;
+    --up-soft:#e6f4ec;
+    --down-ink:#9e2833;
+    --down-bar:#cf5b63;
+    --down-soft:#fbe9eb;
+    --ok-ink:#166a41;
+    --ok-bg:#e6f4ec;
+    --ok-line:#b4dcc4;
+    --near-ink:#8a5300;
+    --near-bg:#fbf1dd;
+    --near-line:#eecf96;
+    --no-ink:#9e2833;
+    --no-bg:#fbe9eb;
+    --no-line:#eec2c7;
+    --focus:#0b3d91;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+    font-size:16px;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:28px 20px 72px;}
+  h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;letter-spacing:-0.01em;}
+  h2{font-size:1.18rem;line-height:1.25;margin:0 0 4px;letter-spacing:-0.005em;}
+  h3{font-size:1rem;margin:0 0 6px;}
+  p{margin:0 0 12px;}
+  .lede{color:var(--ink-2);font-size:1.02rem;margin-bottom:16px;}
+  .eyebrow{
+    display:inline-block;font-size:0.72rem;font-weight:700;letter-spacing:0.09em;
+    text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
+    border-radius:999px;padding:4px 11px;margin-bottom:14px;
+  }
+  .muted{color:var(--ink-3);}
+  strong{color:var(--ink);}
+
+  .slice{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 20px;}
+  .chip{
+    font-size:0.82rem;color:var(--ink-2);background:var(--surface);
+    border:1px solid var(--line);border-radius:8px;padding:5px 10px;
+  }
+  .chip b{color:var(--ink);font-weight:600;}
+
+  .defs{
+    background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;
+    padding:12px 14px;margin:0 0 20px;font-size:0.9rem;
+  }
+  .defs dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;}
+  .defs dt{font-weight:600;color:var(--ink);white-space:nowrap;}
+  .defs dd{margin:0;color:var(--ink-2);}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:22px 22px 24px;margin:0 0 22px;
+    box-shadow:0 1px 2px rgba(20,40,70,0.04);
+  }
+  .zonehead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .zonetag{
+    font-size:0.72rem;font-weight:700;color:#ffffff;background:var(--accent);
+    border-radius:6px;padding:3px 8px;letter-spacing:0.04em;white-space:nowrap;
+  }
+  .zonetag.play{background:var(--ink-2);}
+
+  /* P&L table */
+  .pnl{
+    border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:14px 0 16px;
+    font-variant-numeric:tabular-nums;
+  }
+  .pnl-row{display:flex;justify-content:space-between;gap:14px;padding:9px 14px;font-size:0.94rem;border-top:1px solid var(--line-2);}
+  .pnl-row:first-child{border-top:none;}
+  .pnl-row .lab{color:var(--ink-2);}
+  .pnl-row .num{font-weight:600;color:var(--ink);white-space:nowrap;}
+  .pnl-row.sub{background:var(--surface-2);}
+  .pnl-row.sub .lab,.pnl-row.sub .num{color:var(--ink);font-weight:700;}
+  .pnl-row.final{background:var(--accent-soft);}
+  .pnl-row.final .lab,.pnl-row.final .num{color:var(--accent-dark);font-weight:800;}
+  .pnl-row .drv{display:block;font-size:0.78rem;color:var(--ink-3);font-weight:400;margin-top:1px;}
+
+  .callout{
+    border-left:3px solid var(--accent);background:var(--surface-2);
+    border-radius:0 8px 8px 0;padding:11px 14px;margin:0 0 16px;font-size:0.92rem;color:var(--ink-2);
+  }
+
+  .ask{font-weight:600;color:var(--ink);margin:16px 0 4px;}
+  .entry{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0 2px;}
+  .entry label{font-size:0.92rem;color:var(--ink-2);}
+  .money-wrap{position:relative;display:inline-flex;align-items:center;}
+  .money-wrap .sign{position:absolute;left:12px;color:var(--ink-3);font-weight:600;pointer-events:none;}
+  input[type="text"].money{
+    font:inherit;font-size:1rem;font-weight:700;font-variant-numeric:tabular-nums;
+    width:210px;max-width:100%;padding:11px 12px 11px 26px;border-radius:10px;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+  }
+
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 2px;}
+  button{
+    font:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;
+    border-radius:10px;padding:11px 18px;min-height:44px;border:1.5px solid transparent;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-ghost{background:var(--surface);color:var(--accent-dark);border-color:var(--line);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-link{
+    background:none;border:none;color:var(--accent-dark);padding:8px 2px;
+    text-decoration:underline;text-underline-offset:3px;font-weight:600;min-height:auto;
+  }
+
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px;}
+
+  .feedback{margin-top:16px;}
+  .feedback:empty{display:none;}
+  .fb-inner{padding:14px 16px;border:1.5px solid;border-radius:11px;font-size:0.96rem;}
+  .fb-title{font-weight:700;margin-bottom:5px;}
+  .fb-ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink);}
+  .fb-ok .fb-title{color:var(--ok-ink);}
+  .fb-near{background:var(--near-bg);border-color:var(--near-line);color:var(--near-ink);}
+  .fb-near .fb-title{color:var(--near-ink);}
+  .fb-no{background:var(--no-bg);border-color:var(--no-line);color:var(--no-ink);}
+  .fb-no .fb-title{color:var(--no-ink);}
+
+  .solution{margin-top:16px;}
+  .sol-body{
+    border:1px dashed var(--line);border-radius:11px;background:var(--surface-2);
+    padding:16px 18px;margin-top:10px;font-size:0.93rem;color:var(--ink-2);
+  }
+  .sol-body .calc{font-variant-numeric:tabular-nums;color:var(--ink);margin:0 0 6px;}
+  .sol-read{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-2);}
+  .hidden{display:none;}
+
+  /* Zone 2 — one-way tornado */
+  .test-size{
+    border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+    padding:12px 14px;margin:0 0 18px;
+  }
+  .ts-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px;}
+  .ts-name{font-weight:700;font-size:0.95rem;}
+  .ts-val{font-weight:800;font-size:1.05rem;color:var(--accent-dark);font-variant-numeric:tabular-nums;}
+  .ts-hint{font-size:0.82rem;color:var(--ink-3);margin:0 0 8px;}
+  input[type="range"]{width:100%;height:28px;cursor:pointer;accent-color:var(--accent);}
+
+  .tornado{margin:4px 0 6px;list-style:none;padding:0;}
+  .bar-row{display:grid;grid-template-columns:1fr;gap:3px;padding:9px 0;border-top:1px solid var(--line-2);}
+  .bar-row:first-child{border-top:none;}
+  .bar-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+  .bar-name{font-weight:600;font-size:0.92rem;}
+  .bar-name .rank{color:var(--ink-3);font-weight:700;font-variant-numeric:tabular-nums;margin-right:6px;}
+  .bar-num{font-weight:800;font-size:0.95rem;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .bar-track{height:16px;background:var(--surface-2);border-radius:5px;overflow:hidden;}
+  .bar-fill{height:100%;width:0;border-radius:5px;transition:width 0.18s ease;}
+  .bar-fill.up{background:var(--up-bar);}
+  .bar-fill.down{background:var(--down-bar);}
+  .bar-num.up{color:var(--up-ink);}
+  .bar-num.down{color:var(--down-ink);}
+  .bar-row.top .bar-name{color:var(--accent-dark);}
+  .bar-sub{font-size:0.8rem;color:var(--ink-3);}
+  .lever-line{
+    margin-top:12px;border-radius:11px;border:1.5px solid var(--line-2);
+    background:var(--surface-2);color:var(--ink-2);padding:11px 14px;font-size:0.92rem;
+    font-variant-numeric:tabular-nums;
+  }
+  .lever-line b{color:var(--ink);}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:0.82rem;color:var(--ink-3);margin:2px 0 12px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .dot.up{background:var(--up-bar);}
+  .dot.down{background:var(--down-bar);}
+
+  footer{color:var(--ink-3);font-size:0.82rem;text-align:center;margin-top:6px;}
+
+  @media (max-width:480px){
+    body{font-size:15px;}
+    .wrap{padding:20px 14px 56px;}
+    h1{font-size:1.34rem;}
+    .card{padding:18px 15px 20px;border-radius:12px;}
+    .defs dl{grid-template-columns:1fr;gap:2px 0;}
+    .defs dt{margin-top:6px;}
+    input[type="text"].money{width:100%;}
+    .entry{align-items:stretch;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <span class="eyebrow">Sensitivity analysis</span>
+  <h1>Find the driver that moves the plan most</h1>
+  <p class="lede">A driver model is not finished when the formulas work. It is finished when you know which assumption to worry about. Two plans can be equally "done" and yet one is fragile, because a small miss on a single driver swings the result while the others barely matter. A one-way sensitivity test finds that load-bearing driver, so you know where to spend your estimating care and your controls.</p>
+
+  <p class="muted">FP&amp;A stands for financial planning and analysis &mdash; the team that builds a company's plan and answers "what if?" A <strong>driver</strong> is an operational number a planner sets, such as volume or price; the model then calculates the financial lines from it. A <strong>one-way sensitivity test</strong> raises one driver by a fixed amount, holds the others still, and records how far a chosen result moves. Run it for every driver and the drivers rank themselves, largest mover to smallest. A few terms before you start.</p>
+
+  <div class="defs">
+    <dl>
+      <dt>Operating profit</dt><dd>What is left after every operating cost is paid &mdash; the bottom line this test watches.</dd>
+      <dt>Take rate</dt><dd>The share of each dollar of payment volume the business keeps as revenue.</dd>
+      <dt>Processing cost</dt><dd>Cost of goods sold (COGS): the network and handling cost of running each payment.</dd>
+      <dt>Loss provision</dt><dd>Money set aside for expected fraud and chargebacks on the volume processed.</dd>
+      <dt>Operating expense</dt><dd>Fixed running costs &mdash; salaries, systems, rent &mdash; that do not rise with a day's volume.</dd>
+    </dl>
+  </div>
+
+  <div class="slice" aria-label="What this plan covers">
+    <span class="chip"><b>Business:</b> a payments processing platform</span>
+    <span class="chip"><b>Plan:</b> full-year, drawn from its real books</span>
+    <span class="chip"><b>Question:</b> which driver moves operating profit most?</span>
+  </div>
+
+  <!-- ZONE 1 -->
+  <section class="card" aria-labelledby="z1h">
+    <div class="zonehead">
+      <span class="zonetag">Task</span>
+      <h2 id="z1h">Run one line of the test by hand</h2>
+    </div>
+    <p class="muted" style="margin-bottom:2px;">Here is the platform's annual plan, straight from its books. Four drivers feed it. Three of them &mdash; take rate, processing cost, and loss provision &mdash; are rates per dollar of volume, so revenue, processing cost, and loss all move together when <strong>volume</strong> moves. Operating expense is a fixed number that does not.</p>
+
+    <div class="pnl" aria-label="Annual plan">
+      <div class="pnl-row"><span class="lab">Payment volume<span class="drv">driver &middot; sets the three lines below</span></span><span class="num">$6,218,824,626</span></div>
+      <div class="pnl-row"><span class="lab">Revenue<span class="drv">= volume &times; take rate</span></span><span class="num">$43,266,787</span></div>
+      <div class="pnl-row"><span class="lab">&minus; Processing cost (COGS)<span class="drv">= volume &times; cost rate</span></span><span class="num">$12,769,175</span></div>
+      <div class="pnl-row"><span class="lab">&minus; Loss provision<span class="drv">= volume &times; loss rate</span></span><span class="num">$770,047</span></div>
+      <div class="pnl-row sub"><span class="lab">= Gross profit</span><span class="num">$29,727,566</span></div>
+      <div class="pnl-row"><span class="lab">&minus; Operating expense<span class="drv">fixed &mdash; does not move with volume</span></span><span class="num">$17,929,286</span></div>
+      <div class="pnl-row final"><span class="lab">= Operating profit</span><span class="num">$11,798,279</span></div>
+    </div>
+
+    <div class="callout">Raising volume 10% does not simply add 10% of revenue. More payments earn 10% more revenue, but they also cost 10% more to process and carry 10% more loss. Only what is left &mdash; the gross-profit margin on that extra volume &mdash; reaches operating profit. Operating expense stays put.</div>
+
+    <p class="ask">Raise payment volume by 10%, hold the other drivers still. By how many dollars does operating profit change?</p>
+
+    <div class="entry">
+      <label for="answer">Change in operating profit:</label>
+      <span class="money-wrap">
+        <span class="sign" aria-hidden="true">$</span>
+        <input type="text" class="money" id="answer" inputmode="decimal"
+               autocomplete="off" spellcheck="false" placeholder="0"
+               aria-label="Change in operating profit, in dollars">
+      </span>
+    </div>
+
+    <div class="btnrow">
+      <button type="button" class="btn-primary" id="check-btn">Check my answer</button>
+      <button type="button" class="btn-ghost" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+    <div class="solution hidden" id="solution-wrap">
+      <button type="button" class="btn-link" id="sol-toggle" aria-expanded="false" aria-controls="sol-body">Show the worked answer</button>
+      <div class="sol-body hidden" id="sol-body">
+        <p class="calc">Gross profit &times; 10% &nbsp;=&nbsp; $29,727,566 &times; 0.10 &nbsp;=&nbsp; <strong>+$2,972,757</strong></p>
+        <p class="calc" style="color:var(--ink-3);">Revenue rises $4,326,679, but processing cost rises $1,276,917 and loss rises $77,005 with it. Operating expense is unchanged. Net to operating profit: $4,326,679 &minus; $1,276,917 &minus; $77,005 = $2,972,757.</p>
+        <div class="sol-read">The lesson lives in that subtraction. Because volume drags cost and loss up alongside revenue, a 10% volume rise moves operating profit by 10% of <em>gross profit</em>, not 10% of revenue. A driver that moved only revenue &mdash; the take rate &mdash; would move profit more for the same 10%. That is the kind of surprise a one-way test is built to surface. See it for every driver at once below.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE 2 -->
+  <section class="card" aria-labelledby="z2h">
+    <div class="zonehead">
+      <span class="zonetag play">Explore</span>
+      <h2 id="z2h">Run the whole test and rank the drivers</h2>
+    </div>
+    <p class="muted" style="margin-bottom:12px;">There is no right or wrong here. Set one test size and it is applied to each driver on its own, one at a time &mdash; that is what "one-way" means. Every bar shows how far operating profit would move if that one driver changed by this much and nothing else did. The bars sort themselves longest to shortest, so the biggest lever rises to the top. Drag the test size and watch the order hold while the sizes change.</p>
+
+    <div class="test-size">
+      <div class="ts-top">
+        <span class="ts-name">Test size</span>
+        <span class="ts-val" id="ts-val">+10%</span>
+      </div>
+      <p class="ts-hint">The same percentage change applied to each driver in turn.</p>
+      <input type="range" id="ts-range" min="-25" max="25" step="1" value="10"
+             aria-label="Test size, percent change applied to each driver">
+    </div>
+
+    <div class="legend" aria-hidden="true">
+      <span><span class="dot up"></span> raises operating profit</span>
+      <span><span class="dot down"></span> lowers operating profit</span>
+    </div>
+
+    <ul class="tornado" id="tornado" aria-label="Each driver's effect on operating profit, ranked"></ul>
+
+    <div class="lever-line" id="lever-line"></div>
+
+    <div class="btnrow">
+      <button type="button" class="btn-ghost" id="play-reset">Return test size to +10%</button>
+    </div>
+  </section>
+
+  <footer>An ungraded practice activity. Explore for as long as you like, then close the tab whenever you are done.</footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  function el(id){ return document.getElementById(id); }
+
+  /* ---------- Real base plan ----------
+     Full-year actuals, all countries and products, from the course's Budget Detail
+     workbook (Budget_Detail sheet, 360 rows summed). Nothing here is invented.
+       Volume (TPV) 6,218,824,625.86
+       Revenue      43,266,787.06   = Volume x take rate
+       COGS         12,769,174.75   = Volume x cost rate
+       Loss           770,046.75    = Volume x loss rate
+       Opex        17,929,286.37    (fixed)
+     Gross profit = Revenue - COGS - Loss = 29,727,565.56
+     Operating profit = Gross profit - Opex = 11,798,279.19
+     The three rate drivers scale with volume, so a volume move lifts revenue, COGS
+     and loss together; a take-rate move lifts revenue alone. That is what makes the
+     take rate the larger lever, and it is the point the ranking teaches. */
+  var VOLUME  = 6218824625.86;
+  var REVENUE = 43266787.06;
+  var COGS    = 12769174.75;
+  var LOSS    = 770046.75;
+  var OPEX    = 17929286.37;
+
+  var GROSS   = REVENUE - COGS - LOSS;   // 29,727,565.56
+  var OP_BASE = GROSS - OPEX;            // 11,798,279.19
+
+  /* Isolated one-way effect on operating profit when a single driver scales by p (fraction). */
+  function opWith(scaled){
+    var rev  = REVENUE * (scaled.take !== undefined ? scaled.take : 1) * (scaled.vol !== undefined ? scaled.vol : 1);
+    var cogs = COGS    * (scaled.cost !== undefined ? scaled.cost : 1) * (scaled.vol !== undefined ? scaled.vol : 1);
+    var loss = LOSS    * (scaled.loss !== undefined ? scaled.loss : 1) * (scaled.vol !== undefined ? scaled.vol : 1);
+    var opex = OPEX    * (scaled.opex !== undefined ? scaled.opex : 1);
+    return rev - cogs - loss - opex;
+  }
+  function impact(driver, p){
+    var s = {};
+    s[driver] = 1 + p;
+    return opWith(s) - OP_BASE;
+  }
+
+  var DRIVERS = [
+    { key:"vol",  name:"Volume",           sub:"lifts revenue, processing cost and loss together" },
+    { key:"take", name:"Take rate",        sub:"lifts revenue only" },
+    { key:"opex", name:"Operating expense",sub:"fixed cost line" },
+    { key:"cost", name:"Processing cost",  sub:"cost per dollar of volume" },
+    { key:"loss", name:"Loss provision",   sub:"loss per dollar of volume" }
+  ];
+
+  /* ---------- Formatting ---------- */
+  function fmtSignedUSD(n){
+    var sign = n >= 0 ? "+" : "\u2212";
+    return sign + "$" + Math.round(Math.abs(n)).toLocaleString("en-US");
+  }
+  function parseMoney(str){
+    if(str === null) return NaN;
+    var cleaned = String(str).replace(/[,$\s]/g, "").replace(/\u2212/g, "-");
+    if(cleaned === "" || cleaned === "+" || cleaned === "-" || cleaned === "." ) return NaN;
+    return Number(cleaned);
+  }
+
+  /* ---------- Zone 1: the tie-out ----------
+     Correct = 10% of gross profit = +2,972,756.56. Tolerance +/- $1.00.
+     Recognized near-misses carry a targeted message; anything else is a plain miss. */
+  var CORRECT = 0.10 * GROSS;              // +2,972,756.556
+  var TOL = 1.00;
+
+  var NEAR = [
+    { v: 0.10 * REVENUE, band: 60,
+      msg: "That is 10% of <strong>revenue</strong>. The method is right, but the line is wrong: a 10% volume rise also lifts processing cost and loss 10%, so use 10% of <strong>gross profit</strong>, the amount left after those costs." },
+    { v: 0.10 * OP_BASE, band: 60,
+      msg: "That is 10% of operating profit itself. Scale the lines that volume actually moves &mdash; revenue, processing cost and loss &mdash; not the bottom line you are trying to find." },
+    { v: OP_BASE + 0.10 * GROSS, band: 60,
+      msg: "That looks like the <strong>new</strong> operating profit total. The question asks how much it <strong>moves</strong>: subtract the base of $11,798,279 to get the change." },
+    { v: OP_BASE + 0.10 * REVENUE, band: 60,
+      msg: "That looks like the new total using 10% of revenue. Two fixes: report the <strong>change</strong>, not the new total, and use gross profit rather than revenue, because cost and loss rise with volume too." },
+    { v: -0.10 * GROSS, band: 60,
+      msg: "Right size, wrong direction. More volume <strong>raises</strong> operating profit, so the change is positive." }
+  ];
+
+  var checked = false;
+
+  function setFeedback(kind, title, body){
+    var cls = kind === "ok" ? "fb-ok" : kind === "near" ? "fb-near" : "fb-no";
+    el("feedback").innerHTML =
+      '<div class="fb-inner ' + cls + '"><div class="fb-title">' + title + '</div><div>' + body + '</div></div>';
+  }
+
+  function check(){
+    var raw = el("answer").value;
+    var val = parseMoney(raw);
+
+    if(isNaN(val)){
+      setFeedback("near", "Enter a dollar amount first.",
+        "Type how much operating profit changes when volume rises 10%. A calculator is fine.");
+      return;
+    }
+
+    checked = true;
+    el("solution-wrap").classList.remove("hidden");
+
+    if(Math.abs(val - CORRECT) <= TOL){
+      setFeedback("ok", "That ties out.",
+        "A 10% volume rise moves operating profit by <strong>+$2,972,757</strong> &mdash; exactly 10% of gross profit ($29,727,566). Revenue climbs $4,326,679, but processing cost and loss climb with it, so only the gross-profit margin reaches the bottom line. Hold that number in mind: when you run the full test below, notice that the take rate, which lifts revenue alone, moves profit even more.");
+      return;
+    }
+
+    for(var i = 0; i < NEAR.length; i++){
+      if(Math.abs(val - NEAR[i].v) <= NEAR[i].band){
+        setFeedback("near", "Close &mdash; the right idea, one step off.", NEAR[i].msg);
+        return;
+      }
+    }
+
+    setFeedback("no", "Not yet.",
+      "Start from the line volume actually drives. Volume lifts revenue, processing cost and loss all by 10%, and leaves operating expense alone &mdash; so the change is 10% of <strong>gross profit</strong>. Find gross profit in the plan, then take a tenth of it.");
+  }
+
+  el("check-btn").addEventListener("click", check);
+  el("answer").addEventListener("keydown", function(e){ if(e.key === "Enter"){ check(); } });
+
+  el("reset-btn").addEventListener("click", function(){
+    el("answer").value = "";
+    checked = false;
+    el("feedback").innerHTML = "";
+    el("solution-wrap").classList.add("hidden");
+    resetSolutionToggle();
+    el("answer").focus();
+  });
+
+  function resetSolutionToggle(){
+    var t = el("sol-toggle");
+    el("sol-body").classList.add("hidden");
+    t.setAttribute("aria-expanded", "false");
+    t.textContent = "Show the worked answer";
+  }
+  el("sol-toggle").addEventListener("click", function(){
+    var open = !el("sol-body").classList.contains("hidden");
+    if(open){ resetSolutionToggle(); }
+    else{
+      el("sol-body").classList.remove("hidden");
+      this.setAttribute("aria-expanded", "true");
+      this.textContent = "Hide the worked answer";
+    }
+  });
+
+  /* ---------- Zone 2: the ranked one-way tornado ---------- */
+  var testP = 0.10;
+
+  function buildTornado(){
+    var host = el("tornado");
+    host.innerHTML = "";
+    DRIVERS.forEach(function(d){
+      var li = document.createElement("li");
+      li.className = "bar-row";
+      li.id = "row-" + d.key;
+      li.innerHTML =
+        '<div class="bar-head">' +
+          '<span class="bar-name"><span class="rank" id="rank-' + d.key + '"></span>' + d.name + '</span>' +
+          '<span class="bar-num" id="num-' + d.key + '"></span>' +
+        '</div>' +
+        '<div class="bar-track"><span class="bar-fill" id="fill-' + d.key + '"></span></div>' +
+        '<span class="bar-sub">' + d.sub + '</span>';
+      host.appendChild(li);
+    });
+  }
+
+  function renderTornado(){
+    var rows = DRIVERS.map(function(d){
+      return { d: d, v: impact(d.key, testP) };
+    });
+    rows.sort(function(a, b){ return Math.abs(b.v) - Math.abs(a.v); });
+
+    var maxAbs = 0;
+    rows.forEach(function(r){ if(Math.abs(r.v) > maxAbs){ maxAbs = Math.abs(r.v); } });
+
+    var host = el("tornado");
+    rows.forEach(function(r, idx){
+      var row = el("row-" + r.d.key);
+      host.appendChild(row); // reorder in DOM by rank
+      row.classList.toggle("top", idx === 0 && maxAbs > 0);
+
+      var up = r.v >= 0;
+      var pct = maxAbs > 0 ? (Math.abs(r.v) / maxAbs * 100) : 0;
+
+      el("rank-" + r.d.key).textContent = (idx + 1) + ".";
+      var num = el("num-" + r.d.key);
+      num.textContent = (maxAbs > 0 ? fmtSignedUSD(r.v) : "$0");
+      num.className = "bar-num " + (up ? "up" : "down");
+      var fill = el("fill-" + r.d.key);
+      fill.style.width = pct + "%";
+      fill.className = "bar-fill " + (up ? "up" : "down");
+
+      row.setAttribute("aria-label",
+        (idx + 1) + ". " + r.d.name + ": operating profit " +
+        (up ? "rises " : "falls ") + "$" + Math.round(Math.abs(r.v)).toLocaleString("en-US") +
+        " at a " + Math.round(testP * 100) + "% change");
+    });
+
+    var top = rows[0];
+    var second = rows[1];
+    if(Math.abs(testP) < 0.005 || maxAbs === 0){
+      el("lever-line").innerHTML = "Set a test size above zero. With no change applied, nothing moves.";
+    } else {
+      var dir = testP > 0 ? "up" : "down";
+      el("lever-line").innerHTML =
+        "At a " + fmtPctLabel(testP) + " test, the <b>" + top.d.name.toLowerCase() +
+        "</b> is the biggest lever: it moves operating profit by <b>" + fmtSignedUSD(top.v) +
+        "</b>, more than the " + second.d.name.toLowerCase() + "'s " + fmtSignedUSD(second.v) +
+        ". Turn the size negative and every driver flips " + dir + "-to-down, but the order holds &mdash; the load-bearing driver is the same whichever way you push it.";
+    }
+  }
+
+  function fmtPctLabel(p){
+    var n = Math.round(p * 100);
+    return (n > 0 ? "+" : "") + n + "%";
+  }
+
+  el("ts-range").addEventListener("input", function(){
+    testP = Number(this.value) / 100;
+    el("ts-val").textContent = fmtPctLabel(testP);
+    renderTornado();
+  });
+
+  el("play-reset").addEventListener("click", function(){
+    testP = 0.10;
+    el("ts-range").value = 10;
+    el("ts-val").textContent = "+10%";
+    renderTornado();
+  });
+
+  buildTornado();
+  renderTornado();
+
+})();
+</script>
+</body>
+</html>
