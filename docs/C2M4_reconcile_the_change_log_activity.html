@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reconcile a change log</title>
+<style>
+  :root{
+    --page:#eef1f6;
+    --surface:#ffffff;
+    --surface-2:#f6f8fb;
+    --ink:#161f2e;
+    --ink-2:#4a5a70;
+    --ink-3:#6b7a90;
+    --line:#d5deea;
+    --line-2:#e6ecf4;
+    --accent:#1b4f8a;
+    --accent-dark:#123a68;
+    --accent-soft:#e7eff8;
+    --up-ink:#166a41;
+    --up-bar:#3f9e6b;
+    --up-soft:#e6f4ec;
+    --down-ink:#9e2833;
+    --down-bar:#cf5b63;
+    --down-soft:#fbe9eb;
+    --ok-ink:#166a41;
+    --ok-bg:#e6f4ec;
+    --ok-line:#b4dcc4;
+    --near-ink:#8a5300;
+    --near-bg:#fbf1dd;
+    --near-line:#eecf96;
+    --no-ink:#9e2833;
+    --no-bg:#fbe9eb;
+    --no-line:#eec2c7;
+    --focus:#0b3d91;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+    font-size:16px;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:28px 20px 72px;}
+  h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;letter-spacing:-0.01em;}
+  h2{font-size:1.18rem;line-height:1.25;margin:0 0 4px;letter-spacing:-0.005em;}
+  h3{font-size:1rem;margin:0 0 6px;}
+  p{margin:0 0 12px;}
+  .lede{color:var(--ink-2);font-size:1.02rem;margin-bottom:16px;}
+  .eyebrow{
+    display:inline-block;font-size:0.72rem;font-weight:700;letter-spacing:0.09em;
+    text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
+    border-radius:999px;padding:4px 11px;margin-bottom:14px;
+  }
+  .muted{color:var(--ink-3);}
+  strong{color:var(--ink);}
+
+  .slice{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 20px;}
+  .chip{
+    font-size:0.82rem;color:var(--ink-2);background:var(--surface);
+    border:1px solid var(--line);border-radius:8px;padding:5px 10px;
+  }
+  .chip b{color:var(--ink);font-weight:600;}
+
+  .defs{
+    background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;
+    padding:12px 14px;margin:0 0 20px;font-size:0.9rem;
+  }
+  .defs dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;}
+  .defs dt{font-weight:600;color:var(--ink);white-space:nowrap;}
+  .defs dd{margin:0;color:var(--ink-2);}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:22px 22px 24px;margin:0 0 22px;
+    box-shadow:0 1px 2px rgba(20,40,70,0.04);
+  }
+  .zonehead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .zonetag{
+    font-size:0.72rem;font-weight:700;color:#ffffff;background:var(--accent);
+    border-radius:6px;padding:3px 8px;letter-spacing:0.04em;white-space:nowrap;
+  }
+  .zonetag.play{background:var(--ink-2);}
+
+  /* Plan-movement strip */
+  .plan-strip{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;
+    border:1px solid var(--line);border-radius:11px;background:var(--surface-2);
+    padding:12px 15px;margin:14px 0 16px;font-variant-numeric:tabular-nums;
+  }
+  .plan-strip .ps-cell{display:flex;flex-direction:column;}
+  .plan-strip .ps-lab{font-size:0.76rem;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.05em;}
+  .plan-strip .ps-num{font-weight:800;font-size:1.05rem;color:var(--ink);}
+  .plan-strip .ps-arrow{color:var(--ink-3);font-weight:700;font-size:1.1rem;}
+  .plan-strip .ps-move .ps-num{color:var(--accent-dark);}
+
+  /* Change-log table */
+  .log{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:8px 0 6px;font-variant-numeric:tabular-nums;}
+  .log-head,.log-row{
+    display:grid;grid-template-columns:1.5fr 1.3fr auto;gap:12px;
+    padding:11px 14px;align-items:start;
+  }
+  .log-head{
+    background:var(--surface-2);border-bottom:1px solid var(--line);
+    font-size:0.74rem;font-weight:700;color:var(--ink-2);
+    text-transform:uppercase;letter-spacing:0.05em;
+  }
+  .log-head .r{text-align:right;}
+  .log-row{border-top:1px solid var(--line-2);font-size:0.92rem;}
+  .log-row:first-of-type{border-top:none;}
+  .log-row .drv{font-weight:600;color:var(--ink);}
+  .log-row .who,.log-row .why{display:block;font-size:0.78rem;color:var(--ink-3);font-weight:400;margin-top:1px;}
+  .log-row .chg{color:var(--ink-2);}
+  .log-row .imp{font-weight:700;text-align:right;white-space:nowrap;}
+  .imp.pos{color:var(--up-ink);}
+  .imp.neg{color:var(--down-ink);}
+  .imp.blank{
+    color:var(--accent-dark);background:var(--accent-soft);
+    border:1px dashed var(--accent);border-radius:6px;
+    padding:1px 9px;font-weight:800;justify-self:end;
+  }
+
+  .callout{
+    border-left:3px solid var(--accent);background:var(--surface-2);
+    border-radius:0 8px 8px 0;padding:11px 14px;margin:8px 0 16px;font-size:0.92rem;color:var(--ink-2);
+  }
+
+  .ask{font-weight:600;color:var(--ink);margin:16px 0 4px;}
+  .entry{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0 2px;}
+  .entry label{font-size:0.92rem;color:var(--ink-2);}
+  .money-wrap{position:relative;display:inline-flex;align-items:center;}
+  .money-wrap .sign{position:absolute;left:12px;color:var(--ink-3);font-weight:600;pointer-events:none;}
+  input[type="text"].money{
+    font:inherit;font-size:1rem;font-weight:700;font-variant-numeric:tabular-nums;
+    width:210px;max-width:100%;padding:11px 12px 11px 26px;border-radius:10px;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+  }
+
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 2px;}
+  button{
+    font:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;
+    border-radius:10px;padding:11px 18px;min-height:44px;border:1.5px solid transparent;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-ghost{background:var(--surface);color:var(--accent-dark);border-color:var(--line);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-link{
+    background:none;border:none;color:var(--accent-dark);padding:8px 2px;
+    text-decoration:underline;text-underline-offset:3px;font-weight:600;min-height:auto;
+  }
+
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px;}
+
+  .feedback{margin-top:16px;}
+  .feedback:empty{display:none;}
+  .fb-inner{padding:14px 16px;border:1.5px solid;border-radius:11px;font-size:0.96rem;}
+  .fb-title{font-weight:700;margin-bottom:5px;}
+  .fb-ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink);}
+  .fb-ok .fb-title{color:var(--ok-ink);}
+  .fb-near{background:var(--near-bg);border-color:var(--near-line);color:var(--near-ink);}
+  .fb-near .fb-title{color:var(--near-ink);}
+  .fb-no{background:var(--no-bg);border-color:var(--no-line);color:var(--no-ink);}
+  .fb-no .fb-title{color:var(--no-ink);}
+
+  .solution{margin-top:16px;}
+  .sol-body{
+    border:1px dashed var(--line);border-radius:11px;background:var(--surface-2);
+    padding:16px 18px;margin-top:10px;font-size:0.93rem;color:var(--ink-2);
+  }
+  .sol-body .calc{font-variant-numeric:tabular-nums;color:var(--ink);margin:0 0 6px;}
+  .sol-body .route-lab{font-weight:700;color:var(--ink);margin:12px 0 3px;}
+  .sol-read{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-2);}
+  .hidden{display:none;}
+
+  /* Zone 2 — change-log sandbox */
+  .cl-row{
+    border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+    padding:12px 14px;margin:0 0 12px;
+  }
+  .cl-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:2px;}
+  .cl-name{font-weight:700;font-size:0.95rem;}
+  .cl-sub{font-size:0.8rem;color:var(--ink-3);margin:0 0 8px;}
+  .cl-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:12px;}
+  .cl-slider{flex:1 1 220px;min-width:180px;}
+  .cl-slider input[type="range"]{width:100%;height:28px;cursor:pointer;accent-color:var(--accent);}
+  .cl-size{font-weight:800;font-size:1rem;color:var(--accent-dark);font-variant-numeric:tabular-nums;min-width:74px;text-align:right;}
+  .cl-imp{font-weight:800;font-size:1rem;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:104px;text-align:right;}
+  .cl-imp.pos{color:var(--up-ink);}
+  .cl-imp.neg{color:var(--down-ink);}
+  .cl-logged{display:inline-flex;align-items:center;gap:7px;font-size:0.86rem;color:var(--ink-2);cursor:pointer;user-select:none;}
+  .cl-logged input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;}
+
+  .tally{
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    margin:6px 0 4px;font-variant-numeric:tabular-nums;
+  }
+  .tally-row{display:flex;justify-content:space-between;gap:14px;padding:10px 15px;font-size:0.94rem;border-top:1px solid var(--line-2);}
+  .tally-row:first-child{border-top:none;}
+  .tally-row .t-lab{color:var(--ink-2);}
+  .tally-row .t-num{font-weight:700;color:var(--ink);white-space:nowrap;}
+  .tally-row.sub{background:var(--surface-2);}
+  .tally-row.sub .t-lab,.tally-row.sub .t-num{font-weight:800;color:var(--ink);}
+
+  .recon{
+    margin-top:12px;border-radius:11px;border:1.5px solid;padding:12px 15px;
+    font-size:0.94rem;font-variant-numeric:tabular-nums;
+  }
+  .recon b{font-weight:800;}
+  .recon.good{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink);}
+  .recon.short{background:var(--near-bg);border-color:var(--near-line);color:var(--near-ink);}
+
+  footer{color:var(--ink-3);font-size:0.82rem;text-align:center;margin-top:6px;}
+
+  @media (max-width:480px){
+    body{font-size:15px;}
+    .wrap{padding:20px 14px 56px;}
+    h1{font-size:1.34rem;}
+    .card{padding:18px 15px 20px;border-radius:12px;}
+    .defs dl{grid-template-columns:1fr;gap:2px 0;}
+    .defs dt{margin-top:6px;}
+    input[type="text"].money{width:100%;}
+    .entry{align-items:stretch;}
+    .log-head{display:none;}
+    .log-row{grid-template-columns:1fr auto;gap:4px 12px;}
+    .log-row .chg{grid-column:1;}
+    .log-row .imp,.imp.blank{grid-column:2;grid-row:1 / span 2;align-self:center;}
+    .cl-imp{min-width:0;text-align:left;}
+    .cl-size{min-width:0;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <span class="eyebrow">Change-log discipline</span>
+  <h1>Reconcile a change log</h1>
+  <p class="lede">When a budget review agrees to change something, the change has to be written down &mdash; who asked, which driver moved, why, and by how many dollars. That last field is the one people skip, and skipping it is expensive. A change log you can trust is one where the dollar impacts of every agreed change add up to the amount the plan actually moved. If they do not add up, a change slipped through unrecorded, and no one can trace where the money went.</p>
+
+  <p class="muted">FP&amp;A stands for financial planning and analysis &mdash; the team that builds a company's plan. A <strong>driver</strong> is an operating number a planner sets, such as volume or price; the plan calculates the financial lines from it. A <strong>change log</strong> is the running record of every agreed change to the plan. The <strong>impact</strong> of a change is the dollar amount it adds to or takes from the bottom line. To <strong>reconcile</strong> the log is to confirm the impacts sum to the change in the bottom line &mdash; the parts adding up to the whole. A few terms before you start.</p>
+
+  <div class="defs">
+    <dl>
+      <dt>Operating profit</dt><dd>What is left after every operating cost is paid &mdash; the bottom line this log tracks.</dd>
+      <dt>Take rate</dt><dd>The share of each dollar of payment volume the business keeps as revenue; raising it raises revenue.</dd>
+      <dt>Cost rate</dt><dd>Processing cost (COGS) per dollar of volume; lowering it lowers cost.</dd>
+      <dt>Loss rate</dt><dd>Money set aside for fraud and chargebacks per dollar of volume.</dd>
+      <dt>Operating expense</dt><dd>Fixed running costs &mdash; salaries, systems, rent; a change here is a flat dollar amount.</dd>
+    </dl>
+  </div>
+
+  <div class="slice" aria-label="What this review covers">
+    <span class="chip"><b>Business:</b> a payments processing platform</span>
+    <span class="chip"><b>Review:</b> four agreed changes, volume held steady</span>
+    <span class="chip"><b>Question:</b> does the log reconcile to the plan?</span>
+  </div>
+
+  <!-- ZONE 1 -->
+  <section class="card" aria-labelledby="z1h">
+    <div class="zonehead">
+      <span class="zonetag">Task</span>
+      <h2 id="z1h">Fill the blank so the log reconciles</h2>
+    </div>
+    <p class="muted" style="margin-bottom:2px;">A budget review agreed to four changes for next year's plan. To keep the arithmetic clean, every change holds <strong>payment volume steady</strong> and moves one line on its own, so the four impacts simply add up. The minutes record what happened to the bottom line:</p>
+
+    <div class="plan-strip" aria-label="Plan operating profit before and after the review">
+      <div class="ps-cell"><span class="ps-lab">Operating profit before</span><span class="ps-num" id="ps-before"></span></div>
+      <span class="ps-arrow" aria-hidden="true">&rarr;</span>
+      <div class="ps-cell"><span class="ps-lab">Operating profit after</span><span class="ps-num" id="ps-after"></span></div>
+      <div class="ps-cell ps-move"><span class="ps-lab">Plan moved by</span><span class="ps-num" id="ps-move"></span></div>
+    </div>
+
+    <div class="log" aria-label="Change log from the review">
+      <div class="log-head">
+        <span>Driver changed</span><span>Change agreed</span><span class="r">Impact on operating profit</span>
+      </div>
+      <div class="log-row">
+        <span class="drv">Take rate<span class="who">requested by Pricing</span></span>
+        <span class="chg">+8%<span class="why">new pricing tier on card volume</span></span>
+        <span class="imp blank" id="log-take" aria-label="Impact not yet recorded">not logged</span>
+      </div>
+      <div class="log-row">
+        <span class="drv">Cost rate<span class="who">requested by Operations</span></span>
+        <span class="chg">&minus;5%<span class="why">renegotiated processor fees</span></span>
+        <span class="imp pos" id="log-cost"></span>
+      </div>
+      <div class="log-row">
+        <span class="drv">Loss rate<span class="who">requested by Risk</span></span>
+        <span class="chg">&minus;10%<span class="why">tighter fraud screening</span></span>
+        <span class="imp pos" id="log-loss"></span>
+      </div>
+      <div class="log-row">
+        <span class="drv">Operating expense<span class="who">requested by People</span></span>
+        <span class="chg">+$1,200,000<span class="why">five new hires</span></span>
+        <span class="imp neg" id="log-opex"></span>
+      </div>
+    </div>
+
+    <div class="callout">Three impacts are recorded; the take-rate row is blank. The whole log has to reconcile: the four impacts together must equal the amount the plan moved. So the missing impact is fixed &mdash; it is whatever makes the column add up &mdash; and you can also work it out straight from the change itself.</div>
+
+    <p class="ask">The take-rate row's impact was never filled in. What dollar impact on operating profit belongs in that blank?</p>
+
+    <div class="entry">
+      <label for="answer">Impact of the take-rate change:</label>
+      <span class="money-wrap">
+        <span class="sign" aria-hidden="true">$</span>
+        <input type="text" class="money" id="answer" inputmode="decimal"
+               autocomplete="off" spellcheck="false" placeholder="0"
+               aria-label="Impact of the take-rate change on operating profit, in dollars">
+      </span>
+    </div>
+
+    <div class="btnrow">
+      <button type="button" class="btn-primary" id="check-btn">Check my answer</button>
+      <button type="button" class="btn-ghost" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+    <div class="solution hidden" id="solution-wrap">
+      <button type="button" class="btn-link" id="sol-toggle" aria-expanded="false" aria-controls="sol-body">Show the worked answer</button>
+      <div class="sol-body hidden" id="sol-body">
+        <p class="route-lab">Route 1 &mdash; from the change itself</p>
+        <p class="calc">The take rate lifts one line: revenue. So the impact is 8% of revenue.<br>Revenue &times; 8% &nbsp;=&nbsp; $43,266,787 &times; 0.08 &nbsp;=&nbsp; <strong>+$3,461,343</strong></p>
+        <p class="route-lab">Route 2 &mdash; from the reconciliation</p>
+        <p class="calc">The three recorded rows come to +$638,459 + $77,005 &minus; $1,200,000 = &minus;$484,537.<br>The plan moved +$2,976,806 in all, so the blank must be $2,976,806 &minus; (&minus;$484,537) = <strong>+$3,461,343</strong>.</p>
+        <div class="sol-read">The two routes agree, and that agreement is the point. One route comes from the driver, the other from making the column add up; when they land on the same number, the log reconciles and every dollar of the plan's move is accounted for. A blank row, or one with the wrong sign, breaks that trace &mdash; the plan would show a move that the log cannot explain. Discipline here is not bookkeeping neatness; it is what lets each person see their change reflected and follow it to the result.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE 2 -->
+  <section class="card" aria-labelledby="z2h">
+    <div class="zonehead">
+      <span class="zonetag play">Explore</span>
+      <h2 id="z2h">Move the changes and watch the log reconcile</h2>
+    </div>
+    <p class="muted" style="margin-bottom:12px;">No right or wrong here. Set the size of each agreed change and its impact recomputes. Every change is applied to the plan; the checkbox decides whether it is also written into the log. Keep every applied change logged and the two totals match &mdash; the log reconciles. Leave one out of the log and watch a gap open: the plan moved, but the log cannot say why. Volume stays fixed throughout, which is what keeps the impacts adding up cleanly.</p>
+
+    <div id="cl-rows"></div>
+
+    <div class="tally" aria-label="Reconciliation totals">
+      <div class="tally-row"><span class="t-lab">Logged impacts total</span><span class="t-num" id="t-logged"></span></div>
+      <div class="tally-row"><span class="t-lab">Plan actually moved by</span><span class="t-num" id="t-moved"></span></div>
+      <div class="tally-row sub"><span class="t-lab">New operating profit</span><span class="t-num" id="t-newop"></span></div>
+    </div>
+
+    <div class="recon" id="recon" role="status" aria-live="polite"></div>
+
+    <div class="btnrow">
+      <button type="button" class="btn-ghost" id="play-reset">Reset the changes</button>
+    </div>
+  </section>
+
+  <footer>An ungraded practice activity. Explore for as long as you like, then close the tab whenever you are done.</footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  function el(id){ return document.getElementById(id); }
+
+  /* ---------- Real base plan ----------
+     Full-year actuals, all countries and products, from the course's Budget Detail
+     workbook (Budget_Detail sheet, 360 rows summed). Nothing here is invented.
+       Volume (TPV) 6,218,824,625.86
+       Revenue      43,266,787.06   = Volume x take rate
+       COGS         12,769,174.75   = Volume x cost rate
+       Loss           770,046.75    = Volume x loss rate
+       Opex        17,929,286.37    (fixed)
+     Gross profit = Revenue - COGS - Loss = 29,727,565.56
+     Operating profit = Gross profit - Opex = 11,798,279.19 */
+  var VOLUME  = 6218824625.86;
+  var REVENUE = 43266787.06;
+  var COGS    = 12769174.75;
+  var LOSS    = 770046.75;
+  var OPEX    = 17929286.37;
+
+  var GROSS   = REVENUE - COGS - LOSS;   // 29,727,565.56
+  var OP_BASE = GROSS - OPEX;            // 11,798,279.19
+
+  /* ---------- Formatting ---------- */
+  function fmtUSD(n){ return "$" + Math.round(n).toLocaleString("en-US"); }
+  function fmtSignedUSD(n){
+    var sign = n >= 0 ? "+" : "\u2212";
+    return sign + "$" + Math.round(Math.abs(n)).toLocaleString("en-US");
+  }
+  function parseMoney(str){
+    if(str === null) return NaN;
+    var cleaned = String(str).replace(/[,$\s]/g, "").replace(/\u2212/g, "-");
+    if(cleaned === "" || cleaned === "+" || cleaned === "-" || cleaned === "." ) return NaN;
+    return Number(cleaned);
+  }
+
+  /* ---------- The four agreed changes (volume held fixed, so impacts add up) ----------
+     Take rate +8%  -> revenue up      -> impact = +0.08 * REVENUE   (the blank to solve)
+     Cost rate -5%  -> processing down -> impact = +0.05 * COGS
+     Loss rate -10% -> loss down       -> impact = +0.10 * LOSS
+     Opex +1,200,000 fixed             -> impact = -1,200,000 */
+  var IMP_TAKE = 0.08 * REVENUE;         // +3,461,342.96
+  var IMP_COST = 0.05 * COGS;            //   +638,458.74
+  var IMP_LOSS = 0.10 * LOSS;            //    +77,004.68
+  var IMP_OPEX = -1200000;               // -1,200,000
+
+  var GIVEN_SUM  = IMP_COST + IMP_LOSS + IMP_OPEX;   // -484,536.59
+  var PLAN_DELTA = IMP_TAKE + GIVEN_SUM;             // 2,976,806.38
+  var NEW_OP     = OP_BASE + PLAN_DELTA;             // 14,775,085.57
+
+  /* Fill the static figures from the constants so display and math never drift. */
+  el("ps-before").textContent = fmtUSD(OP_BASE);
+  el("ps-after").textContent  = fmtUSD(NEW_OP);
+  el("ps-move").textContent   = fmtSignedUSD(PLAN_DELTA);
+  el("log-cost").textContent  = fmtSignedUSD(IMP_COST);
+  el("log-loss").textContent  = fmtSignedUSD(IMP_LOSS);
+  el("log-opex").textContent  = fmtSignedUSD(IMP_OPEX);
+
+  /* ---------- Zone 1: the reconciliation tie-out ----------
+     Correct = impact of the take-rate change = +0.08 * REVENUE = +3,461,342.96.
+     It ties out two ways: 8% of revenue, and the plan move net of the three logged rows.
+     Tolerance +/- $1.00. Recognized near-misses carry a targeted message. */
+  var CORRECT = IMP_TAKE;
+  var TOL = 1.00;
+
+  var NEAR = [
+    { v: 0.08 * GROSS, band: 60,
+      msg: "That is 8% of <strong>gross profit</strong>. Right method, wrong line: the take rate lifts <strong>revenue</strong> only &mdash; cost and loss do not move, because volume is held steady. Take 8% of revenue instead." },
+    { v: PLAN_DELTA, band: 60,
+      msg: "That is the amount the whole plan moved, all four changes together. Three of them are already logged, so subtract those rows to isolate the take-rate change &mdash; or read it straight off the driver as 8% of revenue." },
+    { v: PLAN_DELTA - (IMP_COST + IMP_LOSS - IMP_OPEX), band: 60,
+      msg: "Close, but check the operating-expense sign. Adding five hires <strong>raises</strong> operating expense, so that row's impact is <strong>negative</strong>. With its sign fixed, the blank comes out larger." },
+    { v: -IMP_TAKE, band: 60,
+      msg: "Right size, wrong direction. A higher take rate keeps more of each dollar, so revenue and operating profit <strong>rise</strong>. The impact is positive." }
+  ];
+
+  var checked = false;
+
+  function setFeedback(kind, title, body){
+    var cls = kind === "ok" ? "fb-ok" : kind === "near" ? "fb-near" : "fb-no";
+    el("feedback").innerHTML =
+      '<div class="fb-inner ' + cls + '"><div class="fb-title">' + title + '</div><div>' + body + '</div></div>';
+  }
+
+  function check(){
+    var raw = el("answer").value;
+    var val = parseMoney(raw);
+
+    if(isNaN(val)){
+      setFeedback("near", "Enter a dollar amount first.",
+        "Type the impact the take-rate change should log. A calculator is fine.");
+      return;
+    }
+
+    checked = true;
+    el("solution-wrap").classList.remove("hidden");
+    el("log-take").textContent = fmtSignedUSD(CORRECT);
+    el("log-take").classList.remove("blank");
+    el("log-take").classList.add("pos");
+    el("log-take").setAttribute("aria-label", "Impact recorded");
+
+    if(Math.abs(val - CORRECT) <= TOL){
+      setFeedback("ok", "That reconciles.",
+        "The take-rate change logs <strong>+$3,461,343</strong> &mdash; 8% of revenue. Add it to the three recorded rows (&minus;$484,537 together) and you get +$2,976,806, exactly the amount the plan moved. Two routes, one number: the log now accounts for every dollar of the change.");
+      return;
+    }
+
+    for(var i = 0; i < NEAR.length; i++){
+      if(Math.abs(val - NEAR[i].v) <= NEAR[i].band){
+        setFeedback("near", "Close &mdash; the right idea, one step off.", NEAR[i].msg);
+        return;
+      }
+    }
+
+    setFeedback("no", "Not yet.",
+      "Find the one line the take rate moves. It changes how much of each dollar of volume the business keeps, so it lifts <strong>revenue</strong> and nothing else. Start from revenue, $43,266,787, and take 8% of it &mdash; that is the impact this row should log.");
+  }
+
+  el("check-btn").addEventListener("click", check);
+  el("answer").addEventListener("keydown", function(e){ if(e.key === "Enter"){ check(); } });
+
+  el("reset-btn").addEventListener("click", function(){
+    el("answer").value = "";
+    checked = false;
+    el("feedback").innerHTML = "";
+    el("solution-wrap").classList.add("hidden");
+    el("log-take").textContent = "not logged";
+    el("log-take").classList.remove("pos");
+    el("log-take").classList.add("blank");
+    el("log-take").setAttribute("aria-label", "Impact not yet recorded");
+    resetSolutionToggle();
+    el("answer").focus();
+  });
+
+  function resetSolutionToggle(){
+    var t = el("sol-toggle");
+    el("sol-body").classList.add("hidden");
+    t.setAttribute("aria-expanded", "false");
+    t.textContent = "Show the worked answer";
+  }
+  el("sol-toggle").addEventListener("click", function(){
+    var open = !el("sol-body").classList.contains("hidden");
+    if(open){ resetSolutionToggle(); }
+    else{
+      el("sol-body").classList.remove("hidden");
+      this.setAttribute("aria-expanded", "true");
+      this.textContent = "Hide the worked answer";
+    }
+  });
+
+  /* ---------- Zone 2: the change-log sandbox ----------
+     Each change is applied to the plan; "logged" decides whether it also enters the log.
+     Plan moved = sum of ALL impacts. Logged total = sum of LOGGED impacts.
+     Gap = plan moved - logged total = the impacts of any changes left out of the log. */
+  var CHANGES = [
+    { key:"take", name:"Take rate",         unit:"pct", min:-10, max:15, step:1, def:8,
+      sub:"raising it keeps more of each dollar \u2192 revenue up", base:REVENUE, sign:1 },
+    { key:"cost", name:"Cost rate",         unit:"pct", min:-15, max:10, step:1, def:-5,
+      sub:"processing cost per dollar of volume", base:COGS, sign:-1 },
+    { key:"loss", name:"Loss rate",         unit:"pct", min:-25, max:15, step:1, def:-10,
+      sub:"fraud and chargeback set-aside per dollar", base:LOSS, sign:-1 },
+    { key:"opex", name:"Operating expense", unit:"usd", min:-2000000, max:3000000, step:100000, def:1200000,
+      sub:"a flat dollar change \u2014 hiring or cuts", base:null, sign:-1 }
+  ];
+
+  var state = {};
+  CHANGES.forEach(function(c){ state[c.key] = { size:c.def, logged:true }; });
+
+  function impactOf(c){
+    var st = state[c.key];
+    if(c.unit === "pct"){ return c.sign * (st.size / 100) * c.base; }
+    return c.sign * st.size;   // usd: dollar change, sign flips to profit effect
+  }
+  function sizeLabel(c){
+    var st = state[c.key];
+    if(c.unit === "pct"){ return (st.size > 0 ? "+" : "") + st.size + "%"; }
+    return fmtSignedUSD(st.size);
+  }
+
+  function buildRows(){
+    var host = el("cl-rows");
+    host.innerHTML = "";
+    CHANGES.forEach(function(c){
+      var row = document.createElement("div");
+      row.className = "cl-row";
+      row.innerHTML =
+        '<div class="cl-top">' +
+          '<span class="cl-name">' + c.name + '</span>' +
+          '<span class="cl-imp" id="imp-' + c.key + '"></span>' +
+        '</div>' +
+        '<p class="cl-sub">' + c.sub + '</p>' +
+        '<div class="cl-ctrl">' +
+          '<span class="cl-slider"><input type="range" id="rng-' + c.key + '" min="' + c.min +
+            '" max="' + c.max + '" step="' + c.step + '" value="' + c.def +
+            '" aria-label="Size of the ' + c.name + ' change"></span>' +
+          '<span class="cl-size" id="size-' + c.key + '"></span>' +
+          '<label class="cl-logged"><input type="checkbox" id="log-chk-' + c.key +
+            '" checked aria-label="Record the ' + c.name + ' change in the log"> logged</label>' +
+        '</div>';
+      host.appendChild(row);
+    });
+    CHANGES.forEach(function(c){
+      el("rng-" + c.key).addEventListener("input", function(){
+        state[c.key].size = Number(this.value);
+        render();
+      });
+      el("log-chk-" + c.key).addEventListener("change", function(){
+        state[c.key].logged = this.checked;
+        render();
+      });
+    });
+  }
+
+  function render(){
+    var planMoved = 0, logged = 0, anyUnlogged = false, unloggedGap = 0;
+    CHANGES.forEach(function(c){
+      var imp = impactOf(c);
+      planMoved += imp;
+      if(state[c.key].logged){ logged += imp; }
+      else if(Math.abs(imp) >= 0.5){ anyUnlogged = true; unloggedGap += imp; }
+
+      var impEl = el("imp-" + c.key);
+      impEl.textContent = fmtSignedUSD(imp);
+      impEl.className = "cl-imp " + (imp >= 0 ? "pos" : "neg");
+      el("size-" + c.key).textContent = sizeLabel(c);
+    });
+
+    el("t-logged").textContent = fmtSignedUSD(logged);
+    el("t-moved").textContent  = fmtSignedUSD(planMoved);
+    el("t-newop").textContent  = fmtUSD(OP_BASE + planMoved);
+
+    var r = el("recon");
+    if(!anyUnlogged){
+      r.className = "recon good";
+      r.innerHTML = "<b>The log reconciles.</b> Every applied change is recorded, and the logged impacts sum to the " +
+        fmtSignedUSD(planMoved) + " the plan moved. You can trace each dollar of the move to the change that caused it.";
+    } else {
+      r.className = "recon short";
+      r.innerHTML = "<b>The log is short by " + fmtSignedUSD(unloggedGap).replace(/^[+\u2212]/, "") +
+        ".</b> The plan moved " + fmtSignedUSD(planMoved) + ", but the log only shows " + fmtSignedUSD(logged) +
+        ". A change was applied and left unlogged, so the plan moved for a reason the log cannot explain &mdash; that is the trail going cold.";
+    }
+  }
+
+  el("play-reset").addEventListener("click", function(){
+    CHANGES.forEach(function(c){
+      state[c.key] = { size:c.def, logged:true };
+      el("rng-" + c.key).value = c.def;
+      el("log-chk-" + c.key).checked = true;
+    });
+    render();
+  });
+
+  buildRows();
+  render();
+
+})();
+</script>
+</body>
+</html>
