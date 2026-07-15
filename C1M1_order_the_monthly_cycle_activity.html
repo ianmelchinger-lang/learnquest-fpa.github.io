@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Put the monthly FP&amp;A cycle in order</title>
+<style>
+  :root{
+    --page:#eef1f6;
+    --surface:#ffffff;
+    --surface-2:#f6f8fb;
+    --ink:#161f2e;
+    --ink-2:#4a5a70;
+    --ink-3:#6b7a90;
+    --line:#d5deea;
+    --line-2:#e6ecf4;
+    --accent:#1b4f8a;
+    --accent-dark:#123a68;
+    --accent-soft:#e7eff8;
+    --ok-ink:#166a41;
+    --ok-bg:#e6f4ec;
+    --ok-line:#b4dcc4;
+    --near-ink:#8a5300;
+    --near-bg:#fbf1dd;
+    --near-line:#eecf96;
+    --no-ink:#9e2833;
+    --no-bg:#fbe9eb;
+    --no-line:#eec2c7;
+    --break:#c34450;
+    --break-soft:#fbe9eb;
+    --focus:#0b3d91;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+    font-size:16px;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 72px;}
+  h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;letter-spacing:-0.01em;}
+  h2{font-size:1.18rem;line-height:1.25;margin:0 0 4px;letter-spacing:-0.005em;}
+  h3{font-size:1rem;margin:0 0 6px;}
+  p{margin:0 0 12px;}
+  .lede{color:var(--ink-2);font-size:1.02rem;margin-bottom:18px;}
+  .eyebrow{
+    display:inline-block;font-size:0.72rem;font-weight:700;letter-spacing:0.09em;
+    text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
+    border-radius:999px;padding:4px 11px;margin-bottom:14px;
+  }
+  .slice{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 22px;}
+  .chip{
+    font-size:0.82rem;color:var(--ink-2);background:var(--surface);
+    border:1px solid var(--line);border-radius:8px;padding:5px 10px;
+  }
+  .chip b{color:var(--ink);font-weight:600;}
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:22px 22px 24px;margin:0 0 22px;
+    box-shadow:0 1px 2px rgba(20,40,70,0.04);
+  }
+  .zonehead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .zonetag{
+    font-size:0.72rem;font-weight:700;color:#ffffff;background:var(--accent);
+    border-radius:6px;padding:3px 8px;letter-spacing:0.04em;white-space:nowrap;
+  }
+  .zonetag.play{background:var(--ink-2);}
+  .muted{color:var(--ink-3);}
+
+  .defs{
+    background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;
+    padding:12px 14px;margin:0 0 16px;font-size:0.9rem;
+  }
+  .defs dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;}
+  .defs dt{font-weight:600;color:var(--ink);white-space:nowrap;}
+  .defs dd{margin:0;color:var(--ink-2);}
+
+  /* Ordering list */
+  ol.stages{list-style:none;margin:12px 0 4px;padding:0;}
+  .stage{
+    display:flex;align-items:stretch;gap:12px;
+    background:var(--surface);border:1.5px solid var(--line);border-radius:12px;
+    padding:12px 12px 12px 0;margin:0 0 10px;
+  }
+  .stage .pos{
+    flex:0 0 auto;width:40px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:1.15rem;color:var(--accent-dark);
+    background:var(--accent-soft);border-radius:12px 0 0 12px;margin:-12px 0 -12px 0;
+    padding:12px 0;
+  }
+  .stage-body{flex:1 1 auto;min-width:0;}
+  .stage-title{font-weight:700;font-size:1.02rem;}
+  .stage-role{
+    font-size:0.72rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;
+    color:var(--ink-3);margin:1px 0 4px;
+  }
+  .stage-desc{margin:0;font-size:0.9rem;color:var(--ink-2);}
+  .stage-moves{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;justify-content:center;}
+  button.mv{
+    font:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;
+    min-width:60px;min-height:34px;border-radius:8px;
+    border:1.5px solid var(--line);background:var(--surface-2);color:var(--accent-dark);
+    padding:4px 8px;
+  }
+  button.mv:hover{background:var(--accent-soft);}
+  button.mv:disabled{opacity:0.4;cursor:not-allowed;background:var(--surface-2);}
+
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 2px;}
+  button{
+    font:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;
+    border-radius:10px;padding:11px 18px;min-height:44px;border:1.5px solid transparent;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-ghost{background:var(--surface);color:var(--accent-dark);border-color:var(--line);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-link{
+    background:none;border:none;color:var(--accent-dark);padding:8px 2px;
+    text-decoration:underline;text-underline-offset:3px;font-weight:600;min-height:auto;
+  }
+
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px;}
+
+  .feedback{margin-top:16px;border-radius:11px;padding:0;overflow:hidden;}
+  .feedback:empty{display:none;}
+  .fb-inner{padding:14px 16px;border:1.5px solid;border-radius:11px;font-size:0.96rem;}
+  .fb-title{font-weight:700;margin-bottom:3px;}
+  .fb-ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink);}
+  .fb-ok .fb-title{color:var(--ok-ink);}
+  .fb-near{background:var(--near-bg);border-color:var(--near-line);color:var(--near-ink);}
+  .fb-near .fb-title{color:var(--near-ink);}
+  .fb-no{background:var(--no-bg);border-color:var(--no-line);color:var(--no-ink);}
+  .fb-no .fb-title{color:var(--no-ink);}
+
+  .solution{margin-top:16px;}
+  .sol-body{
+    border:1px dashed var(--line);border-radius:11px;background:var(--surface-2);
+    padding:16px 18px;margin-top:10px;
+  }
+  .sol-list{list-style:none;margin:4px 0 0;padding:0;counter-reset:s;}
+  .sol-list li{position:relative;padding:0 0 10px 30px;color:var(--ink-2);}
+  .sol-list li::before{
+    counter-increment:s;content:counter(s);
+    position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;
+    background:var(--accent-soft);color:var(--accent-dark);font-size:0.78rem;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .sol-list b{color:var(--ink);}
+  .sol-read{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-2);color:var(--ink-2);font-size:0.92rem;}
+  .hidden{display:none;}
+
+  /* Play zone */
+  .loop{
+    display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:14px 0 4px;
+  }
+  .node{
+    flex:1 1 150px;min-width:140px;
+    border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+    padding:12px 12px 10px;display:flex;flex-direction:column;gap:8px;
+  }
+  .node.off{background:var(--break-soft);border-color:var(--break);}
+  .node-name{font-weight:700;font-size:0.95rem;}
+  .node.off .node-name{color:var(--break);text-decoration:line-through;}
+  .arrow{
+    flex:0 0 auto;align-self:center;color:var(--ink-3);font-size:1.2rem;font-weight:700;
+    padding:0 2px;
+  }
+  .arrow.broken{color:var(--break);}
+  .switch{display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--ink-2);}
+  .switch input{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;}
+  .loop-status{
+    margin-top:14px;border-radius:11px;border:1.5px solid var(--ok-line);
+    background:var(--ok-bg);color:var(--ok-ink);padding:12px 15px;font-weight:600;
+  }
+  .loop-status.broken{border-color:var(--no-line);background:var(--no-bg);color:var(--no-ink);}
+  .consequences{margin:12px 0 0;padding:0;list-style:none;}
+  .consequences li{
+    font-size:0.9rem;color:var(--no-ink);background:var(--no-bg);
+    border:1px solid var(--no-line);border-radius:9px;padding:9px 12px;margin:0 0 8px;
+  }
+  .consequences li b{color:var(--no-ink);}
+  .consequences:empty{display:none;}
+
+  footer{color:var(--ink-3);font-size:0.82rem;text-align:center;margin-top:6px;}
+
+  @media (max-width:480px){
+    body{font-size:15px;}
+    .wrap{padding:20px 14px 56px;}
+    h1{font-size:1.34rem;}
+    .card{padding:18px 15px 20px;border-radius:12px;}
+    .defs dl{grid-template-columns:1fr;gap:2px 0;}
+    .defs dt{margin-top:6px;}
+    .stage{flex-wrap:wrap;padding:12px;}
+    .stage .pos{width:100%;height:auto;border-radius:10px;margin:0 0 8px;padding:6px 0;}
+    .stage-moves{flex-direction:row;width:100%;}
+    button.mv{flex:1 1 auto;}
+    .loop{flex-direction:column;}
+    .arrow{transform:rotate(90deg);align-self:flex-start;padding:2px 0 2px 18px;}
+    .node{width:100%;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <span class="eyebrow">The FP&amp;A monthly cycle</span>
+  <h1>Put the monthly FP&amp;A cycle in order</h1>
+  <p class="lede">Every month, an FP&amp;A team runs the same short loop: take what already happened, work out what changed and why, turn that into an updated view of what's ahead, and hand it to the person who has to decide. The stages below are the loop for one month, but they are out of order. Your job is to put them in the order an analyst actually works them.</p>
+
+  <p class="muted" style="margin-bottom:16px;"><strong>FP&amp;A</strong> stands for financial planning and analysis. Unlike accounting, which records what already happened, FP&amp;A looks forward: it uses the record to say what is coming and what to do about it. A few plain-language terms before you start.</p>
+
+  <div class="defs">
+    <dl>
+      <dt>Actuals</dt><dd>What actually happened last month, the recorded results.</dd>
+      <dt>The close</dt><dd>When the <strong>controller</strong> (the person who owns the accounting record) shuts the books for the month, so the actuals are final and correct.</dd>
+      <dt>Budget</dt><dd>The approved plan for the year, the fixed target you measure against.</dd>
+      <dt>Variance</dt><dd>The gap between the plan and the actuals: what moved, and by how much.</dd>
+      <dt>Forecast</dt><dd>The live projection of where the business is now heading, updated as things change. Not the same as the fixed budget.</dd>
+      <dt>Business partner</dt><dd>The operating leader who runs a part of the business and has a decision to make, here the head of the claims unit.</dd>
+    </dl>
+  </div>
+
+  <div class="slice" aria-label="What this month covers">
+    <span class="chip"><b>Operating unit:</b> Claims</span>
+    <span class="chip"><b>Timing:</b> first week of the month</span>
+    <span class="chip"><b>Who's waiting:</b> the claims leader</span>
+  </div>
+
+  <!-- ZONE 1 -->
+  <section class="card" aria-labelledby="z1h">
+    <div class="zonehead">
+      <span class="zonetag">Task</span>
+      <h2 id="z1h">Order the four stages, then check</h2>
+    </div>
+    <p class="muted" style="margin-bottom:6px;">Last month, the claims unit's loss-adjustment costs ran over plan, and the claims leader wants to know what happened and what to do. Use the <strong>Up</strong> and <strong>Down</strong> buttons to arrange the four stages of your monthly cycle from first to last. The number on the left shows each stage's current position. When you think the order is right, check it.</p>
+
+    <ol class="stages" id="stage-list" aria-label="Stages of the monthly cycle, reorder from first to last"></ol>
+
+    <div class="btnrow">
+      <button type="button" class="btn-primary" id="check-btn">Check the order</button>
+      <button type="button" class="btn-ghost" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+    <div class="solution hidden" id="solution-wrap">
+      <button type="button" class="btn-link" id="sol-toggle" aria-expanded="false" aria-controls="sol-body">Show the correct order</button>
+      <div class="sol-body hidden" id="sol-body">
+        <h3>The order an analyst works</h3>
+        <ol class="sol-list">
+          <li><b>Confirm the close.</b> Wait for the controller to finish the close, then take the final actuals. Everything after this is built on them.</li>
+          <li><b>Analyze the variance.</b> Compare the actuals to the plan, find the lines that moved, and work out why, here, why loss-adjustment ran over.</li>
+          <li><b>Update the forecast.</b> Use what the variance showed to reshape the forward view of where the unit is now heading.</li>
+          <li><b>Package it for the business partner.</b> Turn it into a short recommendation in the claims leader's own terms, while the decision is still open.</li>
+        </ol>
+        <div class="sol-read">The order is not a matter of taste. Each stage feeds the next: you need final actuals before you can measure a variance, you need the variance before you can update the forecast honestly, and you need the updated forecast before there is anything worth handing over. The last stage, packaging, is the one that turns careful analysis into a decision instead of a file.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE 2 -->
+  <section class="card" aria-labelledby="z2h">
+    <div class="zonehead">
+      <span class="zonetag play">Explore</span>
+      <h2 id="z2h">See where the loop breaks</h2>
+    </div>
+    <p class="muted" style="margin-bottom:6px;">There is no right or wrong here. The four stages are shown in order as a loop that feeds next month. Switch any stage off and watch the chain break at that point, with a plain note on what goes wrong. Turn stages back on to close the loop. The lesson is simple: skip any one stage and a decision never reaches the claims leader.</p>
+
+    <div class="loop" id="loop" aria-label="The monthly cycle as a loop of four stages you can switch on or off"></div>
+
+    <div class="loop-status" id="loop-status" role="status" aria-live="polite">Loop intact. A decision reaches the claims leader this month.</div>
+    <ul class="consequences" id="consequences" aria-live="polite"></ul>
+
+    <div class="btnrow">
+      <button type="button" class="btn-ghost" id="play-reset">Turn all stages back on</button>
+    </div>
+  </section>
+
+  <footer>An ungraded practice activity. Explore for as long as you like, then close the tab whenever you are done.</footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  // The four stages of the monthly FP&A cycle, drawn straight from this module.
+  var STAGES = [
+    { id:"close",    title:"Confirm the close",
+      role:"Controller \u2192 you",
+      desc:"The controller finishes shutting the books, and you take the final, correctly classified actuals for last month." },
+    { id:"variance", title:"Analyze the variance",
+      role:"You (the analyst)",
+      desc:"Compare the actuals to the plan, find the lines that moved, and work out why loss-adjustment ran over." },
+    { id:"forecast", title:"Update the forecast",
+      role:"You (the analyst)",
+      desc:"Use what the variance showed to reshape the forward view of where the claims unit is now heading." },
+    { id:"package",  title:"Package it for the business partner",
+      role:"You \u2192 business partner",
+      desc:"Turn the finding into a short recommendation in the claims leader's own terms, while the decision is still open." }
+  ];
+
+  var CORRECT = ["close","variance","forecast","package"];
+  // A fixed scramble so the task is real and reproducible (not correct on load).
+  var START   = ["forecast","close","package","variance"];
+
+  var STAGE_BY = {};
+  STAGES.forEach(function(s){ STAGE_BY[s.id] = s; });
+
+  function el(id){ return document.getElementById(id); }
+  function idxOf(order, id){ return order.indexOf(id); }
+  function eq(a,b){ return a.length===b.length && a.every(function(v,i){ return v===b[i]; }); }
+
+  // ---------- Zone 1: ordering ----------
+  var order = START.slice();
+  var hasChecked = false;
+  var pendingFocus = null; // {id, dir}
+
+  function render(){
+    var list = el("stage-list");
+    list.innerHTML = "";
+    order.forEach(function(id, i){
+      var s = STAGE_BY[id];
+      var li = document.createElement("li");
+      li.className = "stage";
+      li.setAttribute("data-id", id);
+
+      var pos = document.createElement("span");
+      pos.className = "pos";
+      pos.setAttribute("aria-hidden","true");
+      pos.textContent = String(i+1);
+
+      var body = document.createElement("div");
+      body.className = "stage-body";
+      var t = document.createElement("div"); t.className = "stage-title";
+      t.textContent = (i+1) + ". " + s.title;
+      var r = document.createElement("div"); r.className = "stage-role"; r.textContent = s.role;
+      var d = document.createElement("p"); d.className = "stage-desc"; d.textContent = s.desc;
+      body.appendChild(t); body.appendChild(r); body.appendChild(d);
+
+      var moves = document.createElement("div");
+      moves.className = "stage-moves";
+      var up = document.createElement("button");
+      up.type = "button"; up.className = "mv"; up.textContent = "Up";
+      up.setAttribute("data-dir","up");
+      up.setAttribute("aria-label","Move \u201c"+s.title+"\u201d earlier");
+      up.disabled = (i === 0);
+      var dn = document.createElement("button");
+      dn.type = "button"; dn.className = "mv"; dn.textContent = "Down";
+      dn.setAttribute("data-dir","down");
+      dn.setAttribute("aria-label","Move \u201c"+s.title+"\u201d later");
+      dn.disabled = (i === order.length-1);
+      moves.appendChild(up); moves.appendChild(dn);
+
+      up.addEventListener("click", function(){ move(id,-1); });
+      dn.addEventListener("click", function(){ move(id, 1); });
+
+      li.appendChild(pos); li.appendChild(body); li.appendChild(moves);
+      list.appendChild(li);
+    });
+
+    // Restore keyboard focus to the button the user just pressed, on its new row.
+    if(pendingFocus){
+      var row = list.querySelector('.stage[data-id="'+pendingFocus.id+'"]');
+      if(row){
+        var want = pendingFocus.dir === "up" ? '[data-dir="up"]' : '[data-dir="down"]';
+        var btn = row.querySelector(want);
+        if(btn && !btn.disabled){ btn.focus(); }
+        else{ var alt = row.querySelector('.mv:not(:disabled)'); if(alt) alt.focus(); }
+      }
+      pendingFocus = null;
+    }
+  }
+
+  function move(id, delta){
+    var i = idxOf(order, id);
+    var j = i + delta;
+    if(j < 0 || j >= order.length) return;
+    var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    pendingFocus = { id:id, dir: delta < 0 ? "up" : "down" };
+    // A new arrangement invalidates any showing solution/feedback.
+    el("feedback").innerHTML = "";
+    el("solution-wrap").classList.add("hidden");
+    resetSolutionToggle();
+    render();
+  }
+
+  function setFeedback(kind, title, html){
+    var cls = kind==="ok" ? "fb-ok" : kind==="near" ? "fb-near" : "fb-no";
+    el("feedback").innerHTML =
+      '<div class="fb-inner '+cls+'"><div class="fb-title">'+title+'</div><div>'+html+'</div></div>';
+  }
+
+  // Is the order exactly one adjacent swap away from correct?
+  function isOneAdjacentSwap(o){
+    var diffs = [];
+    for(var i=0;i<o.length;i++){ if(o[i]!==CORRECT[i]) diffs.push(i); }
+    if(diffs.length !== 2) return false;
+    if(diffs[1] - diffs[0] !== 1) return false;
+    return o[diffs[0]]===CORRECT[diffs[1]] && o[diffs[1]]===CORRECT[diffs[0]];
+  }
+
+  function name(id){ return STAGE_BY[id].title; }
+
+  function check(){
+    hasChecked = true;
+    el("solution-wrap").classList.remove("hidden");
+
+    if(eq(order, CORRECT)){
+      setFeedback("ok","That's the cycle.",
+        "You have it: <b>confirm the close</b>, <b>analyze the variance</b>, <b>update the forecast</b>, then <b>package it for the claims leader</b>. "+
+        "Each stage feeds the next, and the last one is the hand-off that turns your analysis into a decision. That loop, run every month, is the heart of FP&amp;A.");
+      return;
+    }
+
+    var pkgPos = idxOf(order,"package");
+    var closePos = idxOf(order,"close");
+    var varPos = idxOf(order,"variance");
+    var fcstPos = idxOf(order,"forecast");
+    var near = isOneAdjacentSwap(order);
+    var kind = near ? "near" : "no";
+
+    // Report the most fundamental problem first.
+    if(pkgPos !== order.length - 1){
+      setFeedback(kind,"Packaging comes last.",
+        "You have <strong>"+name("package")+"</strong> in position "+(pkgPos+1)+
+        ". This stage is the hand-off to the claims leader, so it can only come after the analysis is done. There is nothing to package until the forecast is updated. Move it to the end.");
+      return;
+    }
+    if(closePos !== 0){
+      setFeedback(kind,"Start with the close.",
+        "You have <strong>"+name("close")+"</strong> in position "+(closePos+1)+
+        ". Every stage after it is built on the controller's final actuals. Begin before the books are shut and your whole month can shift when they finalize. Move it to the top.");
+      return;
+    }
+    if(fcstPos < varPos){
+      setFeedback(kind,"Variance before forecast.",
+        "You have <strong>"+name("forecast")+"</strong> ahead of <strong>"+name("variance")+"</strong>. "+
+        "You cannot reshape the forward view until you know what changed and why. Analyze the variance first, then update the forecast.");
+      return;
+    }
+    // Fallback: name the first stage that is out of place.
+    var firstBad = 0;
+    for(var i=0;i<order.length;i++){ if(order[i]!==CORRECT[i]){ firstBad = i; break; } }
+    setFeedback(kind,"Not the working order yet.",
+      "Position "+(firstBad+1)+" is out of place. Work the loop in the order the stages feed one another: final actuals first, then what changed, then the updated view, then the hand-off.");
+  }
+
+  // Worked-solution toggle
+  function resetSolutionToggle(){
+    var t = el("sol-toggle");
+    el("sol-body").classList.add("hidden");
+    t.setAttribute("aria-expanded","false");
+    t.textContent = "Show the correct order";
+  }
+  el("sol-toggle").addEventListener("click", function(){
+    var open = !el("sol-body").classList.contains("hidden");
+    if(open){ resetSolutionToggle(); }
+    else{
+      el("sol-body").classList.remove("hidden");
+      this.setAttribute("aria-expanded","true");
+      this.textContent = "Hide the correct order";
+    }
+  });
+
+  el("check-btn").addEventListener("click", check);
+  el("reset-btn").addEventListener("click", function(){
+    order = START.slice();
+    hasChecked = false;
+    el("feedback").innerHTML = "";
+    el("solution-wrap").classList.add("hidden");
+    resetSolutionToggle();
+    render();
+    el("stage-list").querySelector(".mv:not(:disabled)").focus();
+  });
+
+  render();
+
+  // ---------- Zone 2: where the loop breaks ----------
+  var CONSEQ = {
+    close:    "<b>Skip the close.</b> Your actuals are not final, so every number after this rests on figures that will still move. The whole month can shift under you.",
+    variance: "<b>Skip the variance.</b> You never learn what changed or why, so you would update the forecast on a guess.",
+    forecast: "<b>Skip the forecast.</b> You can explain last month, but you offer no view of where the unit is now heading, which is the part a leader plans around.",
+    package:  "<b>Skip the hand-off.</b> The analysis stays in a file. A correct number that never reaches the decision changes nothing."
+  };
+  var playOn = { close:true, variance:true, forecast:true, package:true };
+
+  function buildLoop(){
+    var host = el("loop");
+    host.innerHTML = "";
+    CORRECT.forEach(function(id, i){
+      var s = STAGE_BY[id];
+      var node = document.createElement("div");
+      node.className = "node"; node.id = "node-"+id;
+
+      var nm = document.createElement("div");
+      nm.className = "node-name"; nm.textContent = (i+1)+". "+s.title;
+
+      var sw = document.createElement("label");
+      sw.className = "switch";
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = true; cb.id = "sw-"+id;
+      cb.setAttribute("aria-label", s.title + " on or off");
+      var txt = document.createElement("span"); txt.id = "swtxt-"+id; txt.textContent = "On";
+      sw.appendChild(cb); sw.appendChild(txt);
+
+      cb.addEventListener("change", function(){
+        playOn[id] = this.checked;
+        renderLoop();
+      });
+
+      node.appendChild(nm); node.appendChild(sw);
+      host.appendChild(node);
+
+      if(i < CORRECT.length - 1){
+        var ar = document.createElement("span");
+        ar.className = "arrow"; ar.id = "arrow-"+i;
+        ar.setAttribute("aria-hidden","true");
+        ar.textContent = "\u2192";
+        host.appendChild(ar);
+      }
+    });
+  }
+
+  function renderLoop(){
+    var anyOff = false;
+    CORRECT.forEach(function(id, i){
+      var on = playOn[id];
+      if(!on) anyOff = true;
+      el("node-"+id).classList.toggle("off", !on);
+      el("swtxt-"+id).textContent = on ? "On" : "Off";
+      if(i < CORRECT.length - 1){
+        var nextOn = playOn[CORRECT[i+1]];
+        el("arrow-"+i).classList.toggle("broken", !on || !nextOn);
+        el("arrow-"+i).textContent = (!on || !nextOn) ? "\u2715" : "\u2192";
+      }
+    });
+
+    var status = el("loop-status");
+    if(anyOff){
+      status.classList.add("broken");
+      status.textContent = "Loop broken. No decision reaches the claims leader this month.";
+    }else{
+      status.classList.remove("broken");
+      status.textContent = "Loop intact. A decision reaches the claims leader this month.";
+    }
+
+    var cons = el("consequences");
+    cons.innerHTML = "";
+    CORRECT.forEach(function(id){
+      if(!playOn[id]){
+        var li = document.createElement("li");
+        li.innerHTML = CONSEQ[id];
+        cons.appendChild(li);
+      }
+    });
+  }
+
+  el("play-reset").addEventListener("click", function(){
+    CORRECT.forEach(function(id){
+      playOn[id] = true;
+      var cb = el("sw-"+id); if(cb) cb.checked = true;
+    });
+    renderLoop();
+  });
+
+  buildLoop();
+  renderLoop();
+
+})();
+</script>
+</body>
+</html>
