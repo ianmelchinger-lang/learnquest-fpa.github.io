@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build the finding for one receiver</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+<main>
+  <h1>Build the finding for one receiver</h1>
+
+  <p>A correct number becomes a decision only when the person receiving it can act on it. You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer. Build a three-sentence finding for one receiver. Pick the sentence for each slot that this receiver can decide on.</p>
+
+  <section class="finding" aria-labelledby="findHead">
+    <h2 id="findHead" style="margin-top:0">The finding</h2>
+    <p>Plant energy is USD 1.80 million over plan through month 9. The utility contract price rose in month 5 and stays fixed through year-end. Months 1 to 4 ran at plan. The forecast effect is USD 0.36 million a month over plan, USD 1.08 million across the 3 months left.</p>
+  </section>
+
+  <section class="card" aria-labelledby="recvHead">
+    <h2 id="recvHead" style="margin-top:0">Your receiver: <span id="recvName"></span></h2>
+    <dl id="recvFacts"></dl>
+  </section>
+
+  <div id="slots"></div>
+
+  <button type="button" class="primary" id="check" disabled>Check my finding</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Fill all three slots to check.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Change the receiver</h2>
+    <p>The finding stays the same. Only the person who must act on it changes. Build the finding again for the other receiver and compare which sentences fit.</p>
+    <button type="button" id="switch">Switch to the other receiver</button>
+  </section>
+
+  <p class="foot">SEM is fictional. All figures in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var RECEIVERS = {
+  ops:{name:'Operations sponsor',
+       reads:'Monthly energy cost across plants, against the monthly plan',
+       decides:'Whether to move energy-heavy work to off-peak hours',
+       wants:'One page and one choice'},
+  proc:{name:'Procurement lead',
+       reads:'Contract price and contract term',
+       decides:'Whether to renegotiate the utility contract or re-bid it',
+       wants:'One page and one choice'}
+};
+var SLOTS = [
+  {id:'s1', name:'Sentence 1: what changed',
+   criterion:'It states the change in plain words, with the figures.',
+   order:['record','plain','jargon','vague'],
+   options:{
+     plain:'Plant energy cost is USD 1.80 million over plan through month 9, and each month since month 5 has run USD 0.36 million over.',
+     jargon:'Energy shows an unfavorable variance of 5.0% to budget on a year-to-date basis.',
+     vague:'Energy costs are higher than we hoped and need watching.',
+     record:'All energy invoices are reconciled to the ledger.'},
+   why:{jargon:'It uses finance terms the receiver does not use.', vague:'It gives no figure to act on.', record:'It describes the record, not a change.'},
+   correct:{ops:'plain', proc:'plain'}},
+  {id:'s2', name:'Sentence 2: what it means in the receiver\u2019s own measures',
+   criterion:'It uses the measures this receiver reads.',
+   order:['jargon','measProc','vague','measOps'],
+   options:{
+     measOps:'Across your plants, monthly energy cost runs USD 0.36 million above the monthly plan, and it stays there for each of the 3 months left.',
+     measProc:'The contract price rose in month 5 and holds through year-end, so the higher price comes from the contract, not from how much energy the plants use.',
+     jargon:'The unfavorable price variance of USD 1.08 million is expected to be recognized in the remaining periods.',
+     vague:'This will have an impact on the rest of the year.'},
+   why:{jargon:'It uses finance terms the receiver does not use.', vague:'It names no measure the receiver reads.', measOps:'It speaks in the other receiver\u2019s measures.', measProc:'It speaks in the other receiver\u2019s measures.'},
+   correct:{ops:'measOps', proc:'measProc'}},
+  {id:'s3', name:'Sentence 3: what you recommend, with a choice',
+   criterion:'It states a recommendation and a choice this receiver can make.',
+   order:['none','actOps','jargon','actProc'],
+   options:{
+     actOps:'I recommend carrying the extra USD 0.36 million a month in your plant forecasts. You can also choose to move energy-heavy work to off-peak hours, and I can size that option.',
+     actProc:'I recommend opening a supplier conversation before year-end. You can choose to renegotiate the rate now or re-bid when the term ends, and I can size both.',
+     jargon:'Accrue an additional USD 1.08 million to the energy variance in the remaining periods.',
+     none:'This is shared for your information.'},
+   why:{jargon:'It states an accounting entry, not a choice the receiver can make.', none:'It states no recommendation.', actOps:'It offers the other receiver\u2019s choice.', actProc:'It offers the other receiver\u2019s choice.'},
+   correct:{ops:'actOps', proc:'actProc'}}
+];
+function scoreFinding(receiver, picks){
+  var right = [], wrong = [];
+  SLOTS.forEach(function(s){ if (picks[s.id] === s.correct[receiver]) right.push(s.id); else wrong.push(s.id); });
+  return {right:right, wrong:wrong, state: wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong')};
+}
+function slotById(id){ return SLOTS.filter(function(s){ return s.id === id; })[0]; }
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+var receiver = 'ops', picks = {}, checked = false;
+
+function renderReceiver(){
+  var r = RECEIVERS[receiver];
+  document.getElementById('recvName').textContent = r.name;
+  var dl = document.getElementById('recvFacts');
+  dl.innerHTML = '';
+  [['Reads', r.reads], ['Decides', r.decides], ['Wants', r.wants]].forEach(function(x){
+    dl.appendChild(h('dt', {text:x[0]})); dl.appendChild(h('dd', {text:x[1]}));
+  });
+}
+function renderSlots(){
+  var wrap = document.getElementById('slots');
+  wrap.innerHTML = '';
+  SLOTS.forEach(function(s){
+    var card = h('section', {class:'card'});
+    var fs = h('fieldset');
+    fs.appendChild(h('legend', {text:s.name}));
+    var opts = h('div', {class:'opts'});
+    s.order.forEach(function(k){
+      var id = 'r-' + s.id + '-' + k;
+      var lab = h('label', {class:'opt', 'for':id});
+      var inp = h('input', {type:'radio', name:'g-' + s.id, id:id, value:k});
+      if (picks[s.id] === k) { inp.checked = true; lab.className = 'opt sel'; }
+      lab.appendChild(inp);
+      lab.appendChild(h('span', {text:s.options[k]}));
+      opts.appendChild(lab);
+    });
+    fs.appendChild(opts);
+    card.appendChild(fs);
+    card.appendChild(h('div', {id:'fb-' + s.id}));
+    wrap.appendChild(card);
+  });
+}
+function refreshSelected(){
+  document.querySelectorAll('.opt').forEach(function(l){
+    var i = l.querySelector('input');
+    l.classList.toggle('sel', !!(i && i.checked));
+  });
+}
+function refresh(){
+  var n = Object.keys(picks).length;
+  document.getElementById('check').disabled = n !== SLOTS.length;
+  document.getElementById('checkHint').textContent = n === SLOTS.length ? 'All three slots are filled. You can check, and you can still change a sentence.' : 'Fill all three slots to check. ' + n + ' of 3 filled.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  SLOTS.forEach(function(s){ document.getElementById('fb-' + s.id).innerHTML = ''; });
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('g-') === 0) {
+    picks[t.name.slice(2)] = t.value;
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function check(){
+  var res = scoreFinding(receiver, picks);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  SLOTS.forEach(function(s){
+    var box = document.getElementById('fb-' + s.id);
+    box.innerHTML = '';
+    if (res.right.indexOf(s.id) !== -1) {
+      box.appendChild(fbBox('correct', 'Correct.', s.criterion + ' This sentence does that for the ' + RECEIVERS[receiver].name + '.'));
+    } else {
+      var why = s.why[picks[s.id]] || '';
+      box.appendChild(fbBox(res.state === 'near' ? 'near' : 'wrong', res.state === 'near' ? 'Check this one.' : 'Not quite.',
+        'The test for this slot: ' + s.criterion + ' ' + why + ' Start here: read what the receiver reads and decides, then ask whether the sentence lets them act.'));
+    }
+  });
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. The finding is ready for the ' + RECEIVERS[receiver].name + '.', 'Read it as the receiver would: ' + SLOTS.map(function(s){ return s.options[picks[s.id]]; }).join(' ')));
+  } else if (res.state === 'near') {
+    sum.appendChild(fbBox('near', 'Close. Two of three sentences fit, and the structure is right.', 'One slot is out of place: ' + slotById(res.wrong[0]).name + '.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 3 slots are out of place.', 'First move: read what this receiver reads and decides. Then ask of each sentence whether the receiver could decide on it. Change your picks and check again.'));
+  }
+  document.getElementById('second').hidden = false;
+}
+document.getElementById('check').addEventListener('click', check);
+document.getElementById('switch').addEventListener('click', function(){
+  receiver = receiver === 'ops' ? 'proc' : 'ops';
+  picks = {};
+  clearFeedback();
+  renderReceiver();
+  renderSlots();
+  refresh();
+  var head = document.getElementById('recvHead');
+  head.setAttribute('tabindex', '-1'); head.focus();
+});
+renderReceiver();
+renderSlots();
+refresh();
+</script>
+</body>
+</html>

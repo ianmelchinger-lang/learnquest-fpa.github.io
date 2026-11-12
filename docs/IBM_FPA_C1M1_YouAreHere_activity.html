@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A freight overage and a Friday deadline</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>A freight overage and a Friday deadline</h1>
+
+  <p>Sample Enterprise Manufacturing (SEM) is a fictional manufacturer. You are its financial planning and analysis (FP&amp;A) analyst, the finance role that works with business leaders on planning. The operations sponsor sends you this message.</p>
+
+  <blockquote class="ask" style="margin-left:0;margin-right:0">
+    Inbound freight is running over plan. The carrier contract renewal closes Friday. What can you give me before then?
+    <cite>Operations sponsor</cite>
+  </blockquote>
+
+  <p>Here is what the finance system shows. A <em>plan</em> is the approved budget. A month is <em>closed</em> when its accounting books are final.</p>
+
+  <dl class="facts" id="facts" aria-label="Inbound freight figures"></dl>
+
+  <h2>Choose the three things you would do first</h2>
+  <p>You have <span class="num" id="hoursAvail">20</span> hours before Friday. Each task shows its hours. Add three tasks to your order and arrange them in the order you would work. A task that does not fit in the hours left is not finished.</p>
+
+  <ul class="actions" id="actions" aria-label="Available tasks"></ul>
+
+  <div class="order">
+    <h3 id="orderHead">Your order</h3>
+    <ol class="picks" id="picks" aria-labelledby="orderHead"></ol>
+    <p class="empty" id="emptyNote">No tasks added yet.</p>
+    <p class="hint" id="firstNote" hidden></p>
+    <button type="button" class="primary" id="commit" disabled>Commit my order</button>
+    <p class="hint" style="margin-top:.6rem">Your result appears below after you commit.</p>
+  </div>
+
+  <div class="sr" id="live" aria-live="polite"></div>
+
+  <section id="reveal" hidden aria-labelledby="revealHead">
+    <h2 id="revealHead" tabindex="-1">What your order delivers by Friday</h2>
+    <div id="revealBody"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All figures in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var FIX = {
+  annualBudget: 96000000,
+  planYtd: 72000000,
+  actualYtd: 75600000,
+  monthsClosed: 9,
+  monthsLeft: 3,
+  hours: 20
+};
+FIX.remainingBudget = FIX.annualBudget - FIX.planYtd;
+FIX.overYtd = FIX.actualYtd - FIX.planYtd;
+
+var TASKS = [
+  {id:'A', title:'Tie every freight invoice to the ledger',
+   desc:'Match each freight invoice in all four regions to the ledger, the official record of transactions.',
+   hours:14, describes:'past', label:'the past'},
+  {id:'B', title:'Rebuild the monthly freight variance report as a full schedule',
+   desc:'List every freight line with its plan, its actual, and the difference between them, called the variance.',
+   hours:6, describes:'past', label:'the past'},
+  {id:'C', title:'Ask regional logistics owners why the line is over',
+   desc:'Find out whether each cause is still running or has already ended.',
+   hours:4, describes:'future', label:'the future'},
+  {id:'D', title:'Project the year-end freight total',
+   desc:'Estimate where the freight line finishes the year.',
+   hours:5, describes:'future', label:'the future', answers:'land'},
+  {id:'E', title:'Write a one-page renewal recommendation',
+   desc:'Set out the renewal options and say which one you advise.',
+   hours:4, describes:'action', label:'what to do', answers:'act'},
+  {id:'F', title:'Document the freight cost-center mapping for the audit file',
+   desc:'Record which cost centers, the units that costs are charged to, feed the freight line.',
+   hours:5, describes:'past', label:'the past'}
+];
+
+function taskById(id){
+  for (var i = 0; i < TASKS.length; i++) { if (TASKS[i].id === id) return TASKS[i]; }
+  return null;
+}
+
+/* Landing points computed from the activity's own figures. */
+function landingPoints(){
+  var persist = FIX.actualYtd + (FIX.remainingBudget * FIX.actualYtd) / FIX.planYtd;
+  var revert = FIX.actualYtd + FIX.remainingBudget;
+  return {persist: persist, revert: revert, gap: persist - revert};
+}
+
+/* Work runs in rank order. A task finishes when its running total is within the hours. */
+function evaluate(order){
+  if (!Array.isArray(order) || order.length !== 3) return {error:'Choose exactly three tasks.'};
+  var seen = {};
+  for (var i = 0; i < order.length; i++) {
+    if (!taskById(order[i])) return {error:'Unknown task.'};
+    if (seen[order[i]]) return {error:'Each task can appear once.'};
+    seen[order[i]] = true;
+  }
+  var run = 0, rows = [], answered = {land:false, act:false};
+  for (var j = 0; j < order.length; j++) {
+    var t = taskById(order[j]);
+    var start = run;
+    run += t.hours;
+    var done = run <= FIX.hours;
+    if (done && t.answers) answered[t.answers] = true;
+    rows.push({task:t, rank:j+1, start:start, end:run, finished:done});
+  }
+  var first = rows[0];
+  var firstPastHours = first.task.describes === 'past' ? first.task.hours : 0;
+  var count = (answered.land ? 1 : 0) + (answered.act ? 1 : 0);
+  return {rows:rows, total:run, answered:answered, count:count, firstPastHours:firstPastHours};
+}
+/*LOGIC-END*/
+
+function fmtUsdM(n){
+  return 'USD ' + (n/1000000).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' million';
+}
+function fmtNum(n){ return n.toLocaleString('en-US'); }
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+
+var state = {picks:[], locked:false, firstOrder:null};
+
+function say(msg){ document.getElementById('live').textContent = msg; }
+
+function renderFacts(){
+  var pct = (FIX.overYtd / FIX.planYtd * 100).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+  var rows = [
+    ['Months closed this year', String(FIX.monthsClosed)],
+    ['Months remaining', String(FIX.monthsLeft)],
+    ['Plan for those closed months', fmtUsdM(FIX.planYtd)],
+    ['Actual for those closed months', fmtUsdM(FIX.actualYtd)],
+    ['Over plan so far', fmtUsdM(FIX.overYtd) + ' (' + pct + '%)']
+  ];
+  var dl = document.getElementById('facts');
+  rows.forEach(function(r){
+    dl.appendChild(h('dt',{text:r[0]}));
+    dl.appendChild(h('dd',{text:r[1]}));
+  });
+}
+
+function renderActions(){
+  var ul = document.getElementById('actions');
+  ul.innerHTML = '';
+  TASKS.forEach(function(t){
+    var picked = state.picks.indexOf(t.id) !== -1;
+    var li = h('li', {class: picked ? 'picked' : ''});
+    var left = h('div', null, [
+      h('div',{class:'a-title',text:t.title}),
+      h('p',{class:'a-desc',text:t.desc})
+    ]);
+    var hrs = h('div',{class:'a-hours',text:t.hours + ' hours'});
+    var btn = h('button',{type:'button',class:'a-btn small','data-add':t.id,
+      'aria-label': (picked ? 'Added: ' : 'Add to my order: ') + t.title,
+      text: picked ? 'Added' : 'Add to my order'});
+    btn.disabled = state.locked || picked || state.picks.length >= 3;
+    li.appendChild(left); li.appendChild(hrs); li.appendChild(btn);
+    ul.appendChild(li);
+  });
+}
+
+function renderPicks(){
+  var ol = document.getElementById('picks');
+  ol.innerHTML = '';
+  state.picks.forEach(function(id, idx){
+    var t = taskById(id);
+    var li = h('li');
+    li.appendChild(h('span',{class:'rank',text:String(idx+1),'aria-hidden':'true'}));
+    li.appendChild(h('div',null,[
+      h('span',{class:'sr',text:'Rank ' + (idx+1) + '. '}),
+      h('span',{class:'a-title',text:t.title}),
+      h('span',{class:'hint',text:' (' + t.hours + ' hours)'})
+    ]));
+    var ctr = h('div',{class:'pick-ctrls'});
+    var up = h('button',{type:'button',class:'small','data-up':id,'aria-label':'Move up: ' + t.title,text:'Move up'});
+    var dn = h('button',{type:'button',class:'small','data-down':id,'aria-label':'Move down: ' + t.title,text:'Move down'});
+    var rm = h('button',{type:'button',class:'small','data-remove':id,'aria-label':'Remove: ' + t.title,text:'Remove'});
+    up.disabled = state.locked || idx === 0;
+    dn.disabled = state.locked || idx === state.picks.length - 1;
+    rm.disabled = state.locked;
+    ctr.appendChild(up); ctr.appendChild(dn); ctr.appendChild(rm);
+    li.appendChild(ctr);
+    ol.appendChild(li);
+  });
+  document.getElementById('emptyNote').hidden = state.picks.length > 0;
+  var commit = document.getElementById('commit');
+  commit.disabled = state.locked || state.picks.length !== 3;
+  commit.hidden = state.locked;
+  var fn = document.getElementById('firstNote');
+  if (state.firstOrder && !state.locked) {
+    fn.hidden = false;
+    fn.textContent = 'Your first committed order: ' + state.firstOrder.map(function(id){return taskById(id).title;}).join('; then ') + '.';
+  } else { fn.hidden = true; }
+}
+
+function renderAll(){ renderActions(); renderPicks(); }
+
+function buildReveal(result){
+  var body = document.getElementById('revealBody');
+  body.innerHTML = '';
+  var scale = Math.max(FIX.hours, result.total);
+
+  var wk = h('div',{class:'weekbar'});
+  var bar = h('div',{class:'bar',role:'img',
+    'aria-label':'Hours bar. ' + result.rows.map(function(r){
+      return 'Rank ' + r.rank + ', ' + r.task.hours + ' hours, ' + (r.finished ? 'finished by Friday' : 'does not fit before Friday');
+    }).join('. ') + '.'});
+  result.rows.forEach(function(r){
+    var cls = 'seg ' + (!r.finished ? 'over' : (r.task.describes === 'past' ? 'past' : 'fwd'));
+    var s = h('div',{class:cls,text:String(r.rank)});
+    s.style.width = (r.task.hours / scale * 100) + '%';
+    s.style.flex = '0 0 auto';
+    bar.appendChild(s);
+  });
+  wk.appendChild(bar);
+  var fr = h('div',{class:'friday','aria-hidden':'true'},[h('span',{text:'Friday: ' + FIX.hours + ' hours'})]);
+  fr.style.left = (FIX.hours / scale * 100) + '%';
+  wk.appendChild(fr);
+  body.appendChild(wk);
+
+  body.appendChild(h('div',{class:'legend'},[
+    h('span',null,[h('i',{class:'l-past'}),document.createTextNode('Finished, describes the past')]),
+    h('span',null,[h('i',{class:'l-fwd'}),document.createTextNode('Finished, describes the future or what to do')]),
+    h('span',null,[h('i',{class:'l-over'}),document.createTextNode('Does not fit before Friday')])
+  ]));
+
+  var ol = h('ol',{class:'result','aria-label':'Your order, task by task'});
+  result.rows.forEach(function(r){
+    var li = h('li');
+    li.appendChild(h('span',{class:'rank',text:String(r.rank),'aria-hidden':'true'}));
+    var b = h('div',{class:'r-body'});
+    b.appendChild(h('div',{class:'r-title',text:r.task.title}));
+    var m = h('div',{class:'r-meta'});
+    m.appendChild(document.createTextNode(r.task.hours + ' hours, running total ' + r.end + ' of ' + FIX.hours + '. '));
+    m.appendChild(h('span',{class:r.finished ? 'status-ok' : 'status-no',
+      text: r.finished ? 'Finished by Friday.' : 'Does not fit before Friday.'}));
+    m.appendChild(document.createTextNode(' Output describes ' + r.task.label + '.'));
+    b.appendChild(m);
+    li.appendChild(b);
+    ol.appendChild(li);
+  });
+  body.appendChild(ol);
+
+  body.appendChild(h('h3',{text:'The sponsor asked two questions'}));
+  var needs = h('div',{class:'needs'});
+  [['Where will the freight line land by year-end?', result.answered.land],
+   ['What should SEM do on the renewal?', result.answered.act]].forEach(function(n){
+    needs.appendChild(h('div',{class:'need'},[
+      h('span',{text:n[0]}),
+      h('span',{class:n[1] ? 'status-ok' : 'status-no', text:n[1] ? 'Answered by Friday' : 'Still open on Friday'})
+    ]));
+  });
+  body.appendChild(needs);
+
+  var msg;
+  if (result.count === 2) {
+    msg = 'Your order answers both questions before Friday. The record work you left out, such as the ledger tie-out, answers a different question: what was spent.';
+  } else if (result.count === 1) {
+    msg = 'Your order answers ' + (result.answered.land ? 'where the line will land' : 'what to do on the renewal') +
+      '. It leaves ' + (result.answered.land ? 'the renewal recommendation' : 'the year-end projection') +
+      ' open, and the sponsor needs both before the contract closes.';
+  } else {
+    msg = 'Your order produces an accurate account of what was spent. When Friday arrives, both of the sponsor\u2019s questions are still open.';
+  }
+  if (result.firstPastHours > 0) {
+    msg += ' Your first pick describes the past and used ' + result.firstPastHours + ' of the ' + FIX.hours + ' hours.';
+  }
+  body.appendChild(h('p',{class:'verdict',text:msg}));
+
+  var lp = landingPoints();
+  var turns = h('div',{class:'turns'});
+  turns.appendChild(h('h3',{text:'What the answer turns on',style:'margin-top:0'}));
+  turns.appendChild(h('p',{text:'The year-end question has more than one possible answer. These two cases use the figures above.'}));
+  var dl = h('dl');
+  dl.appendChild(h('dt',{text:'If the overage rate continues for the remaining ' + FIX.monthsLeft + ' months'}));
+  dl.appendChild(h('dd',{text:fmtUsdM(lp.persist)}));
+  dl.appendChild(h('dt',{text:'If costs return to plan for the remaining ' + FIX.monthsLeft + ' months'}));
+  dl.appendChild(h('dd',{text:fmtUsdM(lp.revert)}));
+  dl.appendChild(h('dt',{text:'Difference the renewal terms have to weigh'}));
+  dl.appendChild(h('dd',{text:fmtUsdM(lp.gap)}));
+  turns.appendChild(dl);
+  turns.appendChild(h('p',{text:'A ledger tie-out cannot say which case holds. It confirms what was spent. Whether the cost continues is a separate finding, and someone has to make it.',style:'margin-bottom:0'}));
+  body.appendChild(turns);
+
+  var cap = h('div',{class:'capability'});
+  cap.appendChild(h('h3',{text:'The capability this points to'}));
+  cap.appendChild(h('p',{text:'Before any budget, forecast, or variance work can be scoped, you have to state what finance owns in a decision: a view of where the numbers are heading, and a recommendation the decision-maker can act on. Record work feeds that view.'}));
+  body.appendChild(cap);
+
+  var again = h('div',{class:'again'},[
+    h('button',{type:'button',id:'again',text:'Rank again'})
+  ]);
+  body.appendChild(again);
+}
+
+function commit(){
+  var result = evaluate(state.picks);
+  if (result.error) { say(result.error); return; }
+  if (!state.firstOrder) state.firstOrder = state.picks.slice();
+  state.locked = true;
+  renderAll();
+  buildReveal(result);
+  var rev = document.getElementById('reveal');
+  rev.hidden = false;
+  var hd = document.getElementById('revealHead');
+  hd.focus();
+  if (hd.scrollIntoView) {
+    var rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    hd.scrollIntoView({behavior: rm ? 'auto' : 'smooth', block:'start'});
+  }
+  say('Result shown below.');
+}
+
+document.addEventListener('click', function(ev){
+  var t = ev.target;
+  if (!t || !t.closest) return;
+  var btn = t.closest('button');
+  if (!btn || btn.disabled) return;
+  var id;
+  if ((id = btn.getAttribute('data-add'))) {
+    if (state.picks.length < 3 && state.picks.indexOf(id) === -1) {
+      state.picks.push(id);
+      renderAll();
+      say('Added. ' + state.picks.length + ' of 3 tasks in your order.');
+    }
+  } else if ((id = btn.getAttribute('data-remove'))) {
+    state.picks.splice(state.picks.indexOf(id), 1);
+    renderAll();
+    say('Removed. ' + state.picks.length + ' of 3 tasks in your order.');
+  } else if ((id = btn.getAttribute('data-up'))) {
+    var i = state.picks.indexOf(id);
+    if (i > 0) { state.picks.splice(i-1, 0, state.picks.splice(i,1)[0]); renderAll();
+      var nb = document.querySelector('[data-up="' + id + '"]'); if (nb && !nb.disabled) nb.focus(); else { nb = document.querySelector('[data-down="' + id + '"]'); if (nb) nb.focus(); }
+      say('Moved to rank ' + (i) + '.'); }
+  } else if ((id = btn.getAttribute('data-down'))) {
+    var j = state.picks.indexOf(id);
+    if (j > -1 && j < state.picks.length - 1) { state.picks.splice(j+1, 0, state.picks.splice(j,1)[0]); renderAll();
+      var nb2 = document.querySelector('[data-down="' + id + '"]'); if (nb2 && !nb2.disabled) nb2.focus(); else { nb2 = document.querySelector('[data-up="' + id + '"]'); if (nb2) nb2.focus(); }
+      say('Moved to rank ' + (j+2) + '.'); }
+  } else if (btn.id === 'commit') {
+    commit();
+  } else if (btn.id === 'again') {
+    state.locked = false;
+    document.getElementById('reveal').hidden = true;
+    renderAll();
+    var first = document.getElementById('orderHead');
+    first.setAttribute('tabindex','-1'); first.focus();
+    say('Order unlocked. Change your order and commit again.');
+  }
+});
+
+document.getElementById('hoursAvail').textContent = String(FIX.hours);
+renderFacts();
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assemble the path from close to decision</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+<main>
+  <h1>Assemble the path from close to decision</h1>
+
+  <p>A monthly finance cycle works as one path: a problem, a sequence of moves, and a signal that the work succeeded. Assemble that path for Sample Enterprise Manufacturing (SEM), a fictional manufacturer. Choose the problem, build the moves in order, and choose the signal.</p>
+
+  <p>Each move shows what it needs and what it produces. Arrange the moves so no move runs before the output it needs.</p>
+
+  <section class="card" aria-labelledby="probHead">
+    <h2 id="probHead" style="margin-top:0">1. The problem, in operational terms</h2>
+    <div id="problem"></div>
+  </section>
+
+  <section class="card" aria-labelledby="movesHead">
+    <h2 id="movesHead" style="margin-top:0">2. The moves</h2>
+    <h3>Available moves</h3>
+    <ul class="pool" id="pool" aria-label="Available moves"></ul>
+    <h3>Your moves, in order</h3>
+    <ol class="picks" id="picks" aria-label="Your moves, in order"></ol>
+    <p class="empty" id="emptyNote">No moves added yet.</p>
+  </section>
+
+  <section class="card" aria-labelledby="sigHead">
+    <h2 id="sigHead" style="margin-top:0">3. The signal that it worked</h2>
+    <div id="signal"></div>
+  </section>
+
+  <button type="button" class="primary" id="check" disabled>Check my assembly</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Choose a problem and a signal, and add at least one move.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Move one assumption</h2>
+    <p>Suppose the controller has not yet confirmed the close. The same moves apply, but some cannot start. See which ones.</p>
+    <button type="button" id="toggleClose" aria-pressed="false">The close is not confirmed</button>
+    <div class="panel" id="closeResult" hidden aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. This activity uses no figures.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var PROBLEMS = [
+  {id:'pa', text:'Finance produces a careful record of the past, and the decision owner still lacks a view of where the numbers are heading and what to do.', correct:true},
+  {id:'pb', text:'Finance models lack enough detail for decision owners to trust them.', correct:false},
+  {id:'pc', text:'The month-end close takes the finance team too many days.', correct:false}
+];
+var SIGNALS = [
+  {id:'sa', text:'A decision owner changes a plan or makes a choice because of the forecast and the recommendation.', correct:true},
+  {id:'sb', text:'Every ledger line ties out to the penny and the package is complete.', correct:false},
+  {id:'sc', text:'The package reaches the receiver by the scheduled date.', correct:false}
+];
+var MOVES = [
+  {id:'m1', title:'Confirm the close schedule and category mapping with the controller',
+   needs:'the controller\u2019s close schedule', makes:'a confirmed close and a category mapping', required:true},
+  {id:'m2', title:'Import actuals and calculate variances line by line, in dollars and percent',
+   needs:'a confirmed close and a category mapping', makes:'a variance table by line', required:true},
+  {id:'m3', title:'Screen the variances for materiality and investigate the ones that clear the threshold',
+   needs:'a variance table by line', makes:'a list of material variances', required:true},
+  {id:'m4', title:'Classify each material driver as lasting, one-time, or unexplained',
+   needs:'a list of material variances', makes:'classified drivers', required:true},
+  {id:'m5', title:'Draft the variance commentary',
+   needs:'classified drivers', makes:'variance commentary', required:true},
+  {id:'m6', title:'Update the forecast for the remaining months',
+   needs:'classified drivers', makes:'an updated forecast', required:true},
+  {id:'m7', title:'Package the commentary and forecast for the receiver, in the receiver\u2019s terms',
+   needs:'variance commentary and an updated forecast', makes:'a package the receiver can act on', required:true},
+  {id:'x1', title:'Reconcile every ledger line before reporting anything',
+   needs:'a confirmed close and a category mapping', makes:'a fully reconciled ledger', required:false},
+  {id:'x2', title:'Roll the variances up to one total before looking at lines',
+   needs:'a variance table by line', makes:'a single total variance', required:false}
+];
+/* Dependencies: move A must come before move B when B needs something A makes. */
+var EDGES = [['m1','m2'],['m2','m3'],['m3','m4'],['m4','m5'],['m4','m6'],['m5','m7'],['m6','m7']];
+function moveById(id){ return MOVES.filter(function(m){ return m.id === id; })[0]; }
+
+function violations(order){
+  var v = [];
+  EDGES.forEach(function(e){
+    var a = order.indexOf(e[0]), b = order.indexOf(e[1]);
+    if (a !== -1 && b !== -1 && a > b) v.push(e);
+  });
+  return v;
+}
+function evaluateAssembly(a){
+  var order = a.order;
+  var probOk = !!a.problem && PROBLEMS.filter(function(p){ return p.id === a.problem; })[0].correct;
+  var sigOk = !!a.signal && SIGNALS.filter(function(s){ return s.id === a.signal; })[0].correct;
+  var missing = MOVES.filter(function(m){ return m.required && order.indexOf(m.id) === -1; }).map(function(m){ return m.id; });
+  var extras = order.filter(function(id){ return !moveById(id).required; });
+  var viol = violations(order);
+  var res = {probOk:probOk, sigOk:sigOk, missing:missing, extras:extras, viol:viol, named:null};
+  if (probOk && sigOk && !missing.length && !extras.length && !viol.length) { res.state = 'correct'; return res; }
+  var setErrors = missing.length + extras.length;
+  if (probOk && sigOk && setErrors === 0 && viol.length) {
+    // near when one card can be lifted out and reinserted somewhere to clear every violation
+    var best = null;
+    order.forEach(function(id){
+      var rest = order.filter(function(x){ return x !== id; });
+      var here = order.indexOf(id), fixAt = -1;
+      for (var pos = 0; pos <= rest.length; pos++) {
+        var tryOrder = rest.slice(0, pos).concat([id], rest.slice(pos));
+        if (violations(tryOrder).length === 0) { fixAt = pos; break; }
+      }
+      if (fixAt !== -1) {
+        var dist = Math.abs(fixAt - here);
+        if (!best || dist > best.dist) best = {id:id, dist:dist};
+      }
+    });
+    if (best) { res.state = 'near'; res.named = {kind:'order', id:best.id}; return res; }
+  }
+  if (probOk && sigOk && setErrors === 1 && !viol.length) {
+    res.state = 'near';
+    res.named = extras.length ? {kind:'extra', id:extras[0]} : {kind:'missing', id:missing[0]};
+    return res;
+  }
+  if (setErrors === 0 && !viol.length && (probOk !== sigOk)) {
+    res.state = 'near';
+    res.named = {kind:'lane', id: probOk ? 'signal' : 'problem'};
+    return res;
+  }
+  res.state = 'wrong';
+  return res;
+}
+/* Which moves are blocked when the close is not confirmed. A move is blocked if it depends, directly or through others, on m1. */
+function blockedWhenCloseUnconfirmed(order){
+  var out = {};
+  order.forEach(function(id){
+    if (id === 'm1') { out[id] = false; return; }
+    var seen = {}, stack = [id], blocked = false;
+    while (stack.length) {
+      var cur = stack.pop();
+      if (seen[cur]) continue; seen[cur] = true;
+      var m = moveById(cur);
+      MOVES.forEach(function(p){
+        if (p.makes === m.needs || (m.needs.indexOf(p.makes) !== -1 && p.required)) {
+          if (p.id === 'm1') blocked = true;
+          if (p.id !== cur) stack.push(p.id);
+        }
+      });
+    }
+    out[id] = blocked;
+  });
+  return out;
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+var state = {problem:null, signal:null, order:[], checked:false, res:null};
+
+function radioGroup(containerId, name, legend, items){
+  var box = document.getElementById(containerId);
+  var fs = h('fieldset');
+  fs.appendChild(h('legend', {text:legend}));
+  var opts = h('div', {class:'opts'});
+  items.forEach(function(it){
+    var id = 'r-' + name + '-' + it.id;
+    var lab = h('label', {class:'opt', 'for':id});
+    lab.appendChild(h('input', {type:'radio', name:name, id:id, value:it.id}));
+    lab.appendChild(h('span', {text:it.text}));
+    opts.appendChild(lab);
+  });
+  fs.appendChild(opts);
+  box.appendChild(fs);
+}
+function renderPool(){
+  var ul = document.getElementById('pool');
+  ul.innerHTML = '';
+  var shown = ['m4','x2','m2','m7','x1','m1','m6','m3','m5'];
+  shown.forEach(function(id){
+    var m = moveById(id);
+    var picked = state.order.indexOf(id) !== -1;
+    var li = h('li', {class: picked ? 'picked' : ''});
+    var wrap = h('div', {class:'mv'});
+    wrap.appendChild(h('div', {class:'a-title', text:m.title}));
+    var btn = h('button', {type:'button', class:'small', 'data-add':id, 'aria-label':(picked ? 'Added: ' : 'Add to my moves: ') + m.title, text: picked ? 'Added' : 'Add to my moves'});
+    btn.disabled = picked;
+    wrap.appendChild(btn);
+    wrap.appendChild(h('p', {class:'needs-prod', text:'Needs: ' + m.needs + '. Produces: ' + m.makes + '.'}));
+    li.appendChild(wrap);
+    ul.appendChild(li);
+  });
+}
+function renderPicks(){
+  var ol = document.getElementById('picks');
+  ol.innerHTML = '';
+  state.order.forEach(function(id, idx){
+    var m = moveById(id);
+    var li = h('li');
+    li.appendChild(h('span', {class:'rank', text:String(idx+1), 'aria-hidden':'true'}));
+    var body = h('div');
+    body.appendChild(h('span', {class:'sr', text:'Position ' + (idx+1) + '. '}));
+    body.appendChild(h('span', {class:'a-title', text:m.title}));
+    body.appendChild(h('div', {class:'hint', text:'Needs: ' + m.needs + '. Produces: ' + m.makes + '.'}));
+    var fl = flagFor(id);
+    if (fl) body.appendChild(h('p', {class: fl.ok ? 'ok' : 'flag', text:fl.text}));
+    var cl = closeFlag(id);
+    if (cl) body.appendChild(h('p', {class: cl.ok ? 'ok' : 'flag', text:cl.text}));
+    li.appendChild(body);
+    var ctr = h('div', {class:'pick-ctrls'});
+    var up = h('button', {type:'button', class:'small', 'data-up':id, 'aria-label':'Move up: ' + m.title, text:'Move up'});
+    var dn = h('button', {type:'button', class:'small', 'data-down':id, 'aria-label':'Move down: ' + m.title, text:'Move down'});
+    var rm = h('button', {type:'button', class:'small', 'data-remove':id, 'aria-label':'Remove: ' + m.title, text:'Remove'});
+    up.disabled = idx === 0; dn.disabled = idx === state.order.length - 1;
+    ctr.appendChild(up); ctr.appendChild(dn); ctr.appendChild(rm);
+    li.appendChild(ctr);
+    ol.appendChild(li);
+  });
+  document.getElementById('emptyNote').hidden = state.order.length > 0;
+}
+function flagFor(id){
+  if (!state.checked || !state.res) return null;
+  var m = moveById(id);
+  if (!m.required) return {ok:false, text:'No later move uses what this move produces.'};
+  var bad = state.res.viol.filter(function(e){ return e[1] === id; });
+  if (bad.length) {
+    var prod = moveById(bad[0][0]);
+    return {ok:false, text:'This move needs ' + m.needs + '. That output comes from a move placed after it.'};
+  }
+  return {ok:true, text:'Its inputs are ready when it runs.'};
+}
+var closeOn = false;
+function closeFlag(id){
+  if (!closeOn) return null;
+  var b = blockedWhenCloseUnconfirmed(state.order);
+  if (b[id] === undefined) return null;
+  return b[id] ? {ok:false, text:'Waits. It depends on a confirmed close.'} : {ok:true, text:'Can start today.'};
+}
+function refreshSelected(){
+  document.querySelectorAll('.opt').forEach(function(l){
+    var i = l.querySelector('input');
+    l.classList.toggle('sel', !!(i && i.checked));
+  });
+}
+function refresh(){
+  renderPool(); renderPicks();
+  var ready = state.problem && state.signal && state.order.length > 0;
+  document.getElementById('check').disabled = !ready;
+  document.getElementById('checkHint').textContent = ready ? 'You can check, and you can still change anything.' : 'Choose a problem and a signal, and add at least one move.';
+}
+function invalidate(){
+  if (!state.checked) return;
+  state.checked = false; state.res = null;
+  document.getElementById('summary').innerHTML = '';
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio') {
+    if (t.name === 'problem') state.problem = t.value;
+    if (t.name === 'signal') state.signal = t.value;
+    refreshSelected(); invalidate(); refresh();
+  }
+});
+document.addEventListener('click', function(ev){
+  var btn = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+  if (!btn || btn.disabled) return;
+  var id;
+  if ((id = btn.getAttribute('data-add'))) {
+    if (state.order.indexOf(id) === -1) state.order.push(id);
+    invalidate(); refresh();
+  } else if ((id = btn.getAttribute('data-remove'))) {
+    state.order.splice(state.order.indexOf(id), 1);
+    invalidate(); refresh();
+  } else if ((id = btn.getAttribute('data-up'))) {
+    var i = state.order.indexOf(id);
+    if (i > 0) { state.order.splice(i-1, 0, state.order.splice(i, 1)[0]); invalidate(); refresh(); focusMove(id, 'up'); }
+  } else if ((id = btn.getAttribute('data-down'))) {
+    var j = state.order.indexOf(id);
+    if (j > -1 && j < state.order.length - 1) { state.order.splice(j+1, 0, state.order.splice(j, 1)[0]); invalidate(); refresh(); focusMove(id, 'down'); }
+  }
+});
+function focusMove(id, dir){
+  var b = document.querySelector('[data-' + dir + '="' + id + '"]');
+  if (!b || b.disabled) b = document.querySelector('[data-' + (dir === 'up' ? 'down' : 'up') + '="' + id + '"]');
+  if (b) b.focus();
+}
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function check(){
+  var res = evaluateAssembly({problem:state.problem, signal:state.signal, order:state.order});
+  state.checked = true; state.res = res;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. The path holds together.', 'The problem names the gap between a record and a decision. Every move uses an output an earlier move produces. The signal is a decision, not a completed report.'));
+  } else if (res.state === 'near') {
+    var n = res.named, msg;
+    if (n.kind === 'order') msg = 'The structure is right. One move is out of order: \u201c' + moveById(n.id).title + '\u201d. Check what it needs and what it produces against its neighbors.';
+    else if (n.kind === 'extra') msg = 'The structure is right. One move does not belong: \u201c' + moveById(n.id).title + '\u201d. Include a move only if a later move uses its output.';
+    else if (n.kind === 'missing') msg = 'The structure is right. One needed output has no move that produces it. Compare each move\u2019s needs with the outputs in your list.';
+    else msg = 'The moves are right. Reread the ' + n.id + ' choices and ask what the path is meant to change.';
+    sum.appendChild(fbBox('near', 'Close. One element is out of place.', msg));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. More than one element is out of place.', 'First move: read each move\u2019s needs and produces. Find the move that needs nothing another move makes, and place it first. Then match each remaining need to the move that produces it.'));
+  }
+  refresh();
+  document.getElementById('second').hidden = false;
+}
+document.getElementById('check').addEventListener('click', check);
+document.getElementById('toggleClose').addEventListener('click', function(){
+  closeOn = !closeOn;
+  this.setAttribute('aria-pressed', closeOn ? 'true' : 'false');
+  this.textContent = closeOn ? 'The close is confirmed' : 'The close is not confirmed';
+  var box = document.getElementById('closeResult');
+  box.hidden = !closeOn;
+  box.innerHTML = '';
+  if (closeOn) {
+    var b = blockedWhenCloseUnconfirmed(state.order);
+    var startable = state.order.filter(function(id){ return b[id] === false; });
+    var waiting = state.order.filter(function(id){ return b[id] === true; });
+    box.appendChild(h('p', {text: startable.length
+      ? 'Only ' + startable.length + ' of your ' + state.order.length + ' moves can start today: \u201c' + startable.map(function(id){ return moveById(id).title; }).join('\u201d, \u201c') + '\u201d. The other ' + waiting.length + ' wait, because each one uses what an earlier move produces, and all of them trace back to the confirmed close.'
+      : 'None of your moves can start today. Your list has no move that confirms the close.'}));
+    box.appendChild(h('p', {text:'The honest status is not yet. The first move holds the rest of the path.'}));
+  }
+  renderPicks();
+});
+radioGroup('problem', 'problem', 'Which statement describes the problem?', PROBLEMS);
+radioGroup('signal', 'signal', 'Which signal shows the path worked?', SIGNALS);
+refresh();
+</script>
+</body>
+</html>
