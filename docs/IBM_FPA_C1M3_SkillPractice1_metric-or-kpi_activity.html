@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which numbers earn KPI status?</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.yn{display:flex;gap:.5rem;flex-wrap:wrap}
+.yn .opt{flex:0 0 auto;min-width:5.5rem}
+.stmt{margin:.7rem 0}
+.stmt legend{font-weight:600;font-size:.95rem}
+.cmp{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start;margin:.5rem 0;padding-bottom:.5rem;border-bottom:1px solid var(--rule)}
+.cmp:last-child{border-bottom:0}
+.cmp .tag{font-weight:700}
+.cmp .chg{color:var(--amber)}
+.cmp small{display:block;color:var(--muted);font-weight:400}
+.goalopts{display:grid;gap:.4rem;margin:.5rem 0}
+@media (max-width:480px){.cmp{grid-template-columns:1fr}.yn .opt{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Which numbers earn KPI status?</h1>
+
+  <p>A <em>metric</em> is any number that measures an activity. A <em>KPI</em> is a metric someone has chosen on purpose, because it passes three tests. It is <em>relevant</em> when it ties to a goal the unit is pursuing right now. It is <em>measurable</em> when it has one definition, applied the same way every time, with data available when the report is due. It is <em>actionable</em> when someone owns it and would act differently when it crosses an agreed level.</p>
+
+  <p>You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer. The Sales and Service function&rsquo;s claims desk has this goal: <strong>resolve warranty claims faster.</strong> Seven numbers are on the table. For each one, answer the three tests.</p>
+
+  <div id="cands"></div>
+
+  <button type="button" class="primary" id="check" disabled>Check my answers</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Answer all 21 questions to check.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Change the goal</h2>
+    <p>The seven numbers stay the same. Only the goal changes. Pick a goal and see which numbers pass all three tests.</p>
+    <fieldset>
+      <legend>The claims desk&rsquo;s goal</legend>
+      <div class="goalopts" id="goalOpts"></div>
+    </fieldset>
+    <div class="panel" id="goalResult" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All numbers and facts in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var TESTS = [
+  {id:'rel', name:'Relevant', q:'Does the number tie to the goal the unit is pursuing right now?'},
+  {id:'mea', name:'Measurable', q:'Does it have one definition, applied the same way every time, with data available when the report is due?'},
+  {id:'act', name:'Actionable', q:'Does someone own it and would act differently when it crosses an agreed level?'}
+];
+var GOALS = {
+  A:{name:'Resolve warranty claims faster', short:'speed'},
+  B:{name:'Reduce warranty cost per claim', short:'cost'}
+};
+var CANDS = [
+  {id:'c1', name:'Median hours from claim opened to claim closed',
+   counts:'Elapsed hours from the day a claim opens to the day it closes.',
+   linkA:'Hours to close are the speed the goal asks for.',
+   linkB:'Elapsed time does not set what a claim costs to settle.',
+   data:'One definition in all four regional claim systems. Data refreshes weekly.',
+   who:'The Claims desk supervisor adds agents to the queue when the median passes the agreed hours.',
+   relA:true, relB:false, mea:true, act:true},
+  {id:'c2', name:'Claims logged per month',
+   counts:'How many claims enter the system.',
+   linkA:'Volume says how many claims arrive, not how fast they close.',
+   linkB:'More claims raise total cost, but the goal measures cost per claim.',
+   data:'One definition. Counts refresh monthly.',
+   who:'No one. Claim volume follows product sales and failures.',
+   relA:false, relB:false, mea:true, act:false},
+  {id:'c3', name:'Customer rating of resolution speed',
+   counts:'Survey score from customers on how quickly their claim was resolved.',
+   linkA:'Customers rate the speed the goal asks for.',
+   linkB:'Customer ratings do not set what a claim costs.',
+   data:'The survey runs once a year, so a monthly report would carry a stale figure.',
+   who:'The After-sales operations lead would review claim handling if the rating fell.',
+   relA:true, relB:false, mea:false, act:true},
+  {id:'c4', name:'Share of claims closed within five business days',
+   counts:'Closed claims that took five business days or fewer, as a share of all closed claims.',
+   linkA:'It shows how many claims meet a speed target.',
+   linkB:'Closure speed does not set cost per claim.',
+   data:'One definition in all four regional claim systems. Data refreshes weekly.',
+   who:'The Claims desk supervisor reassigns cases when the share falls below the agreed level.',
+   relA:true, relB:false, mea:true, act:true},
+  {id:'c5', name:'Claims reopened after closure',
+   counts:'Claims the customer reopens after they were marked closed.',
+   linkA:'A reopened claim restarts the clock on its resolution.',
+   linkB:'Each reopened claim adds repeat work and cost to the same claim.',
+   data:'One definition. Data refreshes weekly.',
+   who:'No owner is named and no level is agreed, so no one is set to respond.',
+   relA:true, relB:true, mea:true, act:false},
+  {id:'c6', name:'Claims waiting for parts',
+   counts:'Open claims waiting on a replacement part, counted each week.',
+   linkA:'Waiting for parts is a common cause of slow closure.',
+   linkB:'Waiting for parts delays a claim but does not change its settlement cost.',
+   data:'One definition. Data refreshes weekly.',
+   who:'The After-sales operations lead escalates to Supply Chain when the count passes the agreed level.',
+   relA:true, relB:false, mea:true, act:true},
+  {id:'c7', name:'Average handle time per phone call',
+   counts:'Minutes an agent spends on each call.',
+   linkA:'Call length measures agent time. The goal concerns days to resolve a claim, which spans many calls and other steps.',
+   linkB:'Agent minutes per call are a direct cost of handling a claim.',
+   data:'One definition. Data refreshes daily.',
+   who:'The Claims desk supervisor coaches agents when it rises.',
+   relA:false, relB:true, mea:true, act:true}
+];
+function candById(id){ return CANDS.filter(function(c){ return c.id === id; })[0]; }
+function keyFor(c, goal){
+  return {rel: goal === 'B' ? c.relB : c.relA, mea: c.mea, act: c.act};
+}
+function isKpi(c, goal){ var k = keyFor(c, goal); return k.rel && k.mea && k.act; }
+function scoreSheet(ans){
+  var wrong = [];
+  CANDS.forEach(function(c){
+    var k = keyFor(c, 'A');
+    TESTS.forEach(function(t){
+      if (!ans[c.id] || ans[c.id][t.id] !== k[t.id]) wrong.push({c:c.id, t:t.id});
+    });
+  });
+  return {wrong:wrong, state: wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong')};
+}
+function kpiSet(goal){ return CANDS.filter(function(c){ return isKpi(c, goal); }).map(function(c){ return c.id; }); }
+function failedTests(c, goal){
+  var k = keyFor(c, goal);
+  return TESTS.filter(function(t){ return !k[t.id]; }).map(function(t){ return t.name.toLowerCase(); });
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+var ans = {}, checked = false;
+
+function renderCands(){
+  var wrap = document.getElementById('cands');
+  CANDS.forEach(function(c){
+    var card = h('section', {class:'card', 'aria-labelledby':'t-' + c.id});
+    card.appendChild(h('h3', {id:'t-' + c.id, text:c.name}));
+    var dl = h('dl');
+    [['What it counts', c.counts], ['Link to the goal', c.linkA], ['Definition and data', c.data], ['Who would act', c.who]].forEach(function(r){
+      dl.appendChild(h('dt', {text:r[0]})); dl.appendChild(h('dd', {text:r[1]}));
+    });
+    card.appendChild(dl);
+    TESTS.forEach(function(t){
+      var fs = h('fieldset', {class:'stmt'});
+      fs.appendChild(h('legend', {text:t.name + ': ' + t.q}));
+      var yn = h('div', {class:'yn'});
+      [['y','Yes'],['n','No']].forEach(function(o){
+        var id = 'r-' + c.id + '-' + t.id + '-' + o[0];
+        var lab = h('label', {class:'opt', 'for':id});
+        lab.appendChild(h('input', {type:'radio', name:'a-' + c.id + '-' + t.id, id:id, value:o[0]}));
+        lab.appendChild(h('span', {text:o[1]}));
+        yn.appendChild(lab);
+      });
+      fs.appendChild(yn);
+      card.appendChild(fs);
+    });
+    card.appendChild(h('div', {id:'fb-' + c.id}));
+    wrap.appendChild(card);
+  });
+}
+function count(){ var n = 0; CANDS.forEach(function(c){ if (ans[c.id]) TESTS.forEach(function(t){ if (ans[c.id][t.id] !== undefined) n++; }); }); return n; }
+function refreshSelected(){
+  document.querySelectorAll('.opt').forEach(function(l){ var i = l.querySelector('input'); l.classList.toggle('sel', !!(i && i.checked)); });
+}
+function refresh(){
+  var n = count(), all = CANDS.length * TESTS.length;
+  document.getElementById('check').disabled = n !== all;
+  document.getElementById('checkHint').textContent = n === all ? 'All 21 are answered. You can check, and you can still change an answer.' : 'Answer all 21 questions to check. ' + n + ' of 21 answered.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  CANDS.forEach(function(c){ document.getElementById('fb-' + c.id).innerHTML = ''; });
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('a-') === 0) {
+    var p = t.name.split('-');
+    ans[p[1]] = ans[p[1]] || {};
+    ans[p[1]][p[2]] = (t.value === 'y');
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+  if (t && t.name === 'goal') { goal = t.value; refreshSelected(); renderGoal(); }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function testQ(id){ return TESTS.filter(function(t){ return t.id === id; })[0]; }
+function check(){
+  var res = scoreSheet(ans);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  CANDS.forEach(function(c){
+    var box = document.getElementById('fb-' + c.id);
+    box.innerHTML = '';
+    var bad = res.wrong.filter(function(w){ return w.c === c.id; });
+    if (!bad.length) {
+      var f = failedTests(c, 'A');
+      box.appendChild(fbBox('correct', isKpi(c, 'A') ? 'Correct. This number is a KPI.' : 'Correct. This number stays a metric.',
+        isKpi(c, 'A') ? 'It passes all three tests for this goal.' : 'It fails the ' + f.join(' and ') + ' test, so it does not earn KPI status for this goal.'));
+    } else {
+      box.appendChild(fbBox(res.state === 'near' ? 'near' : 'wrong', res.state === 'near' ? 'Check this one.' : 'Not quite.',
+        'Ask again: ' + bad.map(function(w){ return testQ(w.t).name + ', \u201c' + testQ(w.t).q + '\u201d'; }).join(' ')));
+    }
+  });
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. All 21 answers are right.', 'Three of the seven numbers pass all three tests and become KPIs for this goal. The other four stay metrics. Each one fails at least one test, whether it is easy to measure or not.'));
+  } else if (res.state === 'near') {
+    var w = res.wrong[0];
+    sum.appendChild(fbBox('near', 'Close. 20 of 21 answers are right, and the structure is right.', 'One answer is out of place: \u201c' + candById(w.c).name + '\u201d on the ' + testQ(w.t).name.toLowerCase() + ' test. Ask that test\u2019s question again.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 21 answers are out of place.', 'First move: start with the goal. For each flagged number, read its link to the goal before you judge anything else. Then read its definition and who would act. Change your answers and check again.'));
+  }
+  document.getElementById('second').hidden = false;
+  renderGoalOpts();
+  renderGoal();
+}
+document.getElementById('check').addEventListener('click', check);
+
+var goal = 'A';
+function renderGoalOpts(){
+  var box = document.getElementById('goalOpts');
+  if (box.children.length) return;
+  ['A','B'].forEach(function(g){
+    var id = 'g-' + g;
+    var lab = h('label', {class:'opt' + (g === goal ? ' sel' : ''), 'for':id});
+    var inp = h('input', {type:'radio', name:'goal', id:id, value:g});
+    if (g === goal) inp.checked = true;
+    lab.appendChild(inp);
+    lab.appendChild(h('span', {text:GOALS[g].name}));
+    box.appendChild(lab);
+  });
+}
+function renderGoal(){
+  var box = document.getElementById('goalResult');
+  box.innerHTML = '';
+  box.appendChild(h('h3', {text:'Goal: ' + GOALS[goal].name}));
+  CANDS.forEach(function(c){
+    var k = keyFor(c, goal), kA = keyFor(c, 'A');
+    var kpi = isKpi(c, goal), kpiA = isKpi(c, 'A');
+    var row = h('div', {class:'cmp'});
+    var left = h('div');
+    left.appendChild(h('span', {text:c.name}));
+    left.appendChild(h('small', {text:'Link to this goal: ' + (goal === 'B' ? c.linkB : c.linkA)}));
+    row.appendChild(left);
+    var tag = h('span', {class:'tag' + (kpi !== kpiA ? ' chg' : ''), text:(kpi ? 'KPI' : 'Metric') + (kpi !== kpiA ? ' (changed)' : '')});
+    row.appendChild(tag);
+    box.appendChild(row);
+  });
+  var set = kpiSet(goal);
+  box.appendChild(h('p', {text: set.length + ' of 7 numbers pass all three tests for this goal.'}));
+  if (goal === 'B') box.appendChild(h('p', {class:'hint', text:'A number that is relevant and measurable but has no owner who would act stays a metric until someone takes ownership and agrees a level. Relevance depends on the goal, so a change of goal changes which numbers qualify.'}));
+}
+renderCands();
+refresh();
+</script>
+</body>
+</html>

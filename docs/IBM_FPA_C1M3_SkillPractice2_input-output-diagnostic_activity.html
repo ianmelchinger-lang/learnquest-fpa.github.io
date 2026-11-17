@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Input, output, or diagnostic?</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.sw{display:flex;gap:.5rem;flex-wrap:wrap}
+.sw .opt{flex:0 0 auto;min-width:7rem}
+.stmt{margin:.5rem 0}
+.packlist{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.4rem}
+.packlist .opt{align-items:center}
+.cnt{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.cnt dt,.cnt dd{margin:0}
+.cnt dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+@media (max-width:480px){.sw .opt{flex:1 1 40%}.cnt{grid-template-columns:1fr}.cnt dd{text-align:left}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Input, output, or diagnostic?</h1>
+
+  <p>A KPI set that holds only results reports what already happened. Sorting KPIs by the job they do shows which ones move first. An <em>output</em> KPI measures a result the unit answers for, such as revenue, cost, or retention. An <em>input</em> KPI measures a resource or activity that drives results, such as headcount, volume, or spend. A <em>diagnostic</em> KPI measures how well the process between inputs and outputs runs.</p>
+
+  <p>You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer. A plant&rsquo;s goal is to deliver good units on schedule. Nine KPIs are candidates for its monthly pack. Sort each one by its job.</p>
+
+  <div id="cards"></div>
+
+  <button type="button" class="primary" id="check" disabled>Check my sort</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Sort all nine to check.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Build a pack and see what it can warn about</h2>
+    <p>Choose the KPIs for the plant&rsquo;s pack. The usual range is three to five, and that range is a guideline. The panel shows which jobs your pack covers and how many of its numbers move before a result does.</p>
+    <fieldset>
+      <legend>Your pack</legend>
+      <ul class="packlist" id="packList"></ul>
+    </fieldset>
+    <div class="panel" id="packResult" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All KPIs in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var TYPES = {I:'Input', D:'Diagnostic', O:'Output'};
+var KPIS = [
+  {id:'k1', name:'Units produced per month', says:'Count of finished units leaving the line each month.', type:'I',
+   why:'Production volume is an activity that drives results, so it is an input.'},
+  {id:'k2', name:'Operators on shift', says:'Average number of operators working each shift.', type:'I',
+   why:'Headcount is a resource that drives results, so it is an input.'},
+  {id:'k3', name:'First-pass yield', says:'Share of units that pass inspection the first time.', type:'D',
+   why:'It measures how well the process runs between inputs and results, so it is a diagnostic.'},
+  {id:'k4', name:'Cost per unit', says:'Plant cost divided by units produced.', type:'D',
+   why:'It is a financial figure, yet it describes how efficiently inputs become outputs, so it is a diagnostic.'},
+  {id:'k5', name:'Orders completed by the due date', says:'Share of orders finished by the date promised.', type:'O',
+   why:'It is a result the plant answers for, so it is an output.'},
+  {id:'k6', name:'Customer-reported defects per 1,000 units shipped', says:'Defects customers report, scaled to units shipped.', type:'O',
+   why:'It is a result the plant answers for, so it is an output.'},
+  {id:'k7', name:'Maintenance hours performed', says:'Hours of planned maintenance work completed.', type:'I',
+   why:'Planned maintenance is activity that drives results, so it is an input.'},
+  {id:'k8', name:'Unplanned downtime hours', says:'Hours each week the line stops without a plan.', type:'D',
+   why:'It shows the health of the process, so it is a diagnostic.'},
+  {id:'k9', name:'Plant operating margin', says:'Operating profit as a share of plant sales.', type:'O',
+   why:'It is a result the plant answers for, so it is an output.'}
+];
+function kpiById(id){ return KPIS.filter(function(k){ return k.id === id; })[0]; }
+function leads(k){ return k.type !== 'O'; }
+function scoreSort(ans){
+  var wrong = KPIS.filter(function(k){ return ans[k.id] !== k.type; }).map(function(k){ return k.id; });
+  return {wrong:wrong, state: wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong')};
+}
+function packSummary(ids){
+  var c = {I:0, D:0, O:0};
+  ids.forEach(function(id){ c[kpiById(id).type]++; });
+  var missing = ['O','I','D'].filter(function(t){ return c[t] === 0; });
+  var early = ids.filter(function(id){ return leads(kpiById(id)); }).length;
+  var results = c.O;
+  return {counts:c, missing:missing, early:early, results:results, size:ids.length};
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+var ans = {}, checked = false, pack = [];
+
+function renderCards(){
+  var wrap = document.getElementById('cards');
+  KPIS.forEach(function(k){
+    var card = h('section', {class:'card', 'aria-labelledby':'t-' + k.id});
+    card.appendChild(h('h3', {id:'t-' + k.id, text:k.name}));
+    card.appendChild(h('p', {class:'a-desc', text:k.says}));
+    var fs = h('fieldset', {class:'stmt'});
+    fs.appendChild(h('legend', {text:'What job does this KPI do?'}));
+    var sw = h('div', {class:'sw'});
+    ['I','D','O'].forEach(function(t){
+      var id = 'r-' + k.id + '-' + t;
+      var lab = h('label', {class:'opt', 'for':id});
+      lab.appendChild(h('input', {type:'radio', name:'g-' + k.id, id:id, value:t}));
+      lab.appendChild(h('span', {text:TYPES[t]}));
+      sw.appendChild(lab);
+    });
+    fs.appendChild(sw);
+    card.appendChild(fs);
+    card.appendChild(h('div', {id:'fb-' + k.id}));
+    wrap.appendChild(card);
+  });
+}
+function refreshSelected(){
+  document.querySelectorAll('.opt').forEach(function(l){ var i = l.querySelector('input'); l.classList.toggle('sel', !!(i && i.checked)); });
+}
+function refresh(){
+  var n = Object.keys(ans).length;
+  document.getElementById('check').disabled = n !== KPIS.length;
+  document.getElementById('checkHint').textContent = n === KPIS.length ? 'All nine are sorted. You can check, and you can still change a placement.' : 'Sort all nine to check. ' + n + ' of 9 sorted.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  KPIS.forEach(function(k){ document.getElementById('fb-' + k.id).innerHTML = ''; });
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('g-') === 0) {
+    ans[t.name.slice(2)] = t.value;
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+  if (t && t.type === 'checkbox' && t.getAttribute('data-pack')) {
+    var id = t.getAttribute('data-pack');
+    var i = pack.indexOf(id);
+    if (t.checked && i === -1) pack.push(id);
+    if (!t.checked && i !== -1) pack.splice(i, 1);
+    t.parentNode.classList.toggle('sel', t.checked);
+    renderPack();
+  }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function check(){
+  var res = scoreSort(ans);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  KPIS.forEach(function(k){
+    var box = document.getElementById('fb-' + k.id);
+    box.innerHTML = '';
+    if (res.wrong.indexOf(k.id) === -1) {
+      box.appendChild(fbBox('correct', 'Correct.', k.why + (leads(k) ? ' It usually moves before the results do.' : ' It usually reports what already happened.')));
+    } else {
+      var b = h('div', {class:'fb ' + (res.state === 'near' ? 'near' : 'wrong')});
+      b.appendChild(h('b', {text: res.state === 'near' ? 'Check this one.' : 'Not quite.'}));
+      b.appendChild(h('p', {text:'Ask three questions about this KPI.'}));
+      b.appendChild(h('p', {text:'Is it a result the unit answers for?'}));
+      b.appendChild(h('p', {text:'Is it a resource or activity that drives results?'}));
+      b.appendChild(h('p', {text:'Does it measure how well the process runs?'}));
+      box.appendChild(b);
+    }
+  });
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. All nine are sorted.', 'Three KPIs are inputs, three are diagnostics, and three are outputs. Inputs and diagnostics usually move before results, so they give early signals. Outputs usually report what already happened.'));
+  } else if (res.state === 'near') {
+    sum.appendChild(fbBox('near', 'Close. Eight of nine are sorted correctly, and the structure is right.', 'One KPI is out of place: \u201c' + kpiById(res.wrong[0]).name + '\u201d. Ask the three questions on its card again.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 9 are out of place.', 'First move: for each flagged KPI, ask whether it is a result, a resource or activity, or a measure of how the process runs. A financial figure or a count can fit any of the three jobs. Change your placements and check again.'));
+  }
+  document.getElementById('second').hidden = false;
+  renderPackList();
+  renderPack();
+}
+document.getElementById('check').addEventListener('click', check);
+
+function renderPackList(){
+  var ul = document.getElementById('packList');
+  if (ul.children.length) return;
+  KPIS.forEach(function(k){
+    var li = h('li');
+    var lab = h('label', {class:'opt', 'for':'p-' + k.id});
+    lab.appendChild(h('input', {type:'checkbox', id:'p-' + k.id, 'data-pack':k.id}));
+    lab.appendChild(h('span', {text:k.name + ' (' + TYPES[k.type].toLowerCase() + ')'}));
+    li.appendChild(lab);
+    ul.appendChild(li);
+  });
+}
+function renderPack(){
+  var box = document.getElementById('packResult');
+  box.innerHTML = '';
+  var s = packSummary(pack);
+  box.appendChild(h('h3', {text:'What your pack covers'}));
+  var dl = h('dl', {class:'cnt'});
+  function row(a, b){ dl.appendChild(h('dt', {text:a})); dl.appendChild(h('dd', {text:b})); }
+  row('KPIs in the pack', String(s.size));
+  row('Outputs, inputs, diagnostics', s.counts.O + ', ' + s.counts.I + ', ' + s.counts.D);
+  row('Numbers that move before a result', String(s.early));
+  box.appendChild(dl);
+  if (s.size === 0) { box.appendChild(h('p', {text:'Choose KPIs to see what the pack can warn about.'})); return; }
+  var msgs = [];
+  if (s.early === 0) msgs.push('This pack reports what already happened. It holds no number that moves before a result does, so it cannot warn the plant in time.');
+  else if (s.results === 0) msgs.push('This pack holds early signals but no result to anchor them. Add an output so the plant can see what the signals are predicting.');
+  if (s.missing.length && s.early > 0 && s.results > 0) msgs.push('The pack has no ' + s.missing.map(function(t){ return TYPES[t].toLowerCase(); }).join(' or ') + ' KPI. Each missing job leaves part of the picture out.');
+  if (!s.missing.length) msgs.push('The pack covers all three jobs, so it shows both what happened and what is about to happen.');
+  if (s.size < 3 || s.size > 5) msgs.push('The pack holds ' + s.size + ' KPIs. The usual range is three to five, and that range is a guideline, not a rule.');
+  msgs.forEach(function(m){ box.appendChild(h('p', {text:m})); });
+}
+renderCards();
+refresh();
+</script>
+</body>
+</html>
