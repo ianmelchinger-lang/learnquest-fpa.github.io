@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measure the gap between profit and cash</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.qtbl{display:grid;grid-template-columns:1fr auto auto;gap:.3rem 1.1rem;margin:.5rem 0;font-variant-numeric:tabular-nums}
+.qtbl .hd{font-weight:700}
+.qtbl .r{text-align:right}
+.inp{display:grid;grid-template-columns:1fr 9rem;gap:.4rem .9rem;align-items:center;margin:.5rem 0}
+.inp input{font:inherit;min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%;font-variant-numeric:tabular-nums}
+.sw{display:flex;gap:.5rem;flex-wrap:wrap}
+.sw .opt{flex:0 0 auto;min-width:7rem}
+.chg{color:var(--amber);font-weight:700}
+@media (max-width:480px){.inp{grid-template-columns:1fr}.sw .opt{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Measure the gap between profit and cash</h1>
+
+  <p>Profit and cash follow different calendars, so the gap between them needs a number. Two measures size it. You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer. Compute both measures for two quarters of one product line, then say which line moved most.</p>
+
+  <p><em>Operating cash flow as a share of net income</em> divides cash from operations by net income. The <em>cash conversion cycle</em> counts the days cash stays tied up in operations. It adds <em>days inventory outstanding</em>, the average days goods sit before sale, to <em>days sales outstanding</em>, the average days customers take to pay. It then subtracts <em>days payable outstanding</em>, the average days the business takes to pay suppliers.</p>
+
+  <section class="card" aria-labelledby="dataHead">
+    <h2 id="dataHead" style="margin-top:0">Product line 1, two quarters</h2>
+    <p class="hint">Net income and cash are USD millions. Days are averages for the quarter.</p>
+    <div class="qtbl" id="data" role="table" aria-label="Two quarters of figures"></div>
+  </section>
+
+  <section class="card" aria-labelledby="calcHead">
+    <h2 id="calcHead" style="margin-top:0">Your calculations</h2>
+    <p class="hint">Enter shares as percents, for example 45.0. Enter cycles in days.</p>
+    <div id="inputs"></div>
+    <fieldset class="stmt">
+      <legend>Which working-capital line moved most between the quarters, in days?</legend>
+      <div class="sw" id="lineOpts"></div>
+    </fieldset>
+    <fieldset class="stmt">
+      <legend>Did the cash conversion cycle lengthen, shorten, or stay the same?</legend>
+      <div class="sw" id="dirOpts"></div>
+    </fieldset>
+  </section>
+
+  <button type="button" class="primary" id="check" disabled>Check my measures</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Answer all six questions to check.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Move one assumption</h2>
+    <p>Change the days customers take to pay in quarter 2. Everything else stays the same. Watch the cycle and the line that moved most.</p>
+    <label class="fl" for="dso">Quarter 2 days sales outstanding: <span class="num" id="dsoOut">62</span></label>
+    <input type="range" id="dso" min="40" max="80" step="1" value="62">
+    <div class="panel" id="moved" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All figures in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var Q = [
+  {label:'Quarter 1', ni:80, ocf:64, dio:52, dso:48, dpo:40},
+  {label:'Quarter 2', ni:84, ocf:50, dio:55, dso:62, dpo:41}
+];
+var TOL_PCT = 0.1, TOL_DAYS = 0.5;
+function share(q){ return q.ocf / q.ni * 100; }
+function ccc(q){ return q.dio + q.dso - q.dpo; }
+function movedMost(a, b){
+  var ch = {dio:b.dio - a.dio, dso:b.dso - a.dso, dpo:b.dpo - a.dpo};
+  var best = 'dio';
+  ['dso','dpo'].forEach(function(k){ if (Math.abs(ch[k]) > Math.abs(ch[best])) best = k; });
+  return {id:best, change:ch};
+}
+function direction(a, b){
+  var x = ccc(b) - ccc(a);
+  return x > 0 ? 'lengthen' : (x < 0 ? 'shorten' : 'same');
+}
+function within(v, target, tol){ return typeof v === 'number' && isFinite(v) && Math.abs(v - target) <= tol; }
+/* Names a common wrong method without giving the answer. */
+function diagnoseShare(v, q){
+  if (typeof v !== 'number' || !isFinite(v)) return 'Enter a number.';
+  if (within(v, q.ni / q.ocf * 100, TOL_PCT)) return 'The share asks how much of profit became cash. Which figure goes on top?';
+  if (within(v, share(q) / 100, 0.001)) return 'Enter the share as a percent, for example 45.0, not as a decimal.';
+  return 'Start with the question the share answers: how much of net income became operating cash?';
+}
+function diagnoseCcc(v, q){
+  if (typeof v !== 'number' || !isFinite(v)) return 'Enter a number.';
+  if (within(v, q.dio + q.dso + q.dpo, TOL_DAYS)) return 'Days payable outstanding is time the business holds suppliers\u2019 money. Check what that does to days tied up.';
+  return 'List the three components and mark which one is time the business holds someone else\u2019s money.';
+}
+function evaluate(a){
+  var q1 = Q[0], q2 = Q[1];
+  var mm = movedMost(q1, q2);
+  var checks = [
+    {id:'s1', ok: within(a.s1, share(q1), TOL_PCT), diag: diagnoseShare(a.s1, q1)},
+    {id:'s2', ok: within(a.s2, share(q2), TOL_PCT), diag: diagnoseShare(a.s2, q2)},
+    {id:'c1', ok: within(a.c1, ccc(q1), TOL_DAYS), diag: diagnoseCcc(a.c1, q1)},
+    {id:'c2', ok: within(a.c2, ccc(q2), TOL_DAYS), diag: diagnoseCcc(a.c2, q2)},
+    {id:'line', ok: a.line === mm.id, diag:'Compare the change in each of the three day counts between the quarters.'},
+    {id:'dir', ok: a.dir === direction(q1, q2), diag:'Compare the two cycle lengths you calculated.'}
+  ];
+  var wrong = checks.filter(function(c){ return !c.ok; });
+  return {checks:checks, wrong:wrong, state: wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong')};
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+function n(x){ return x.toLocaleString('en-US'); }
+function p1(x){ return x.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1}); }
+var NAMES = {s1:'Quarter 1 share of net income', s2:'Quarter 2 share of net income', c1:'Quarter 1 cash conversion cycle', c2:'Quarter 2 cash conversion cycle', line:'Line that moved most', dir:'Direction of the cycle'};
+var LINENAME = {dio:'Days inventory outstanding', dso:'Days sales outstanding', dpo:'Days payable outstanding'};
+var ans = {}, checked = false;
+
+function renderData(){
+  var t = document.getElementById('data');
+  function cell(txt, cls){ t.appendChild(h('div', {class:cls || '', role:'cell', text:txt})); }
+  ['Measure', Q[0].label, Q[1].label].forEach(function(x, i){ t.appendChild(h('div', {class:'hd' + (i ? ' r' : ''), role:'columnheader', text:x})); });
+  [['Net income', 'ni'], ['Cash from operations', 'ocf'], ['Days inventory outstanding', 'dio'], ['Days sales outstanding', 'dso'], ['Days payable outstanding', 'dpo']].forEach(function(r){
+    cell(r[0]); cell(n(Q[0][r[1]]), 'r'); cell(n(Q[1][r[1]]), 'r');
+  });
+}
+function renderInputs(){
+  var wrap = document.getElementById('inputs');
+  [['s1','Operating cash flow as a share of net income, quarter 1 (percent)'],
+   ['s2','Operating cash flow as a share of net income, quarter 2 (percent)'],
+   ['c1','Cash conversion cycle, quarter 1 (days)'],
+   ['c2','Cash conversion cycle, quarter 2 (days)']].forEach(function(f){
+    var row = h('div', {class:'inp'});
+    row.appendChild(h('label', {'for':'i-' + f[0], text:f[1]}));
+    row.appendChild(h('input', {type:'number', step:'any', inputmode:'decimal', id:'i-' + f[0], 'data-f':f[0]}));
+    wrap.appendChild(row);
+    wrap.appendChild(h('div', {id:'fb-' + f[0]}));
+  });
+  var lo = document.getElementById('lineOpts');
+  [['dio','Days inventory outstanding'],['dso','Days sales outstanding'],['dpo','Days payable outstanding']].forEach(function(o){
+    var id = 'r-line-' + o[0];
+    var lab = h('label', {class:'opt', 'for':id});
+    lab.appendChild(h('input', {type:'radio', name:'g-line', id:id, value:o[0]}));
+    lab.appendChild(h('span', {text:o[1]}));
+    lo.appendChild(lab);
+  });
+  lo.parentNode.appendChild(h('div', {id:'fb-line'}));
+  var dop = document.getElementById('dirOpts');
+  [['lengthen','Lengthened'],['shorten','Shortened'],['same','Stayed the same']].forEach(function(o){
+    var id = 'r-dir-' + o[0];
+    var lab = h('label', {class:'opt', 'for':id});
+    lab.appendChild(h('input', {type:'radio', name:'g-dir', id:id, value:o[0]}));
+    lab.appendChild(h('span', {text:o[1]}));
+    dop.appendChild(lab);
+  });
+  dop.parentNode.appendChild(h('div', {id:'fb-dir'}));
+}
+function refreshSelected(){
+  document.querySelectorAll('.opt').forEach(function(l){
+    var i = l.querySelector('input');
+    l.classList.toggle('sel', !!(i && i.checked));
+  });
+}
+function refresh(){
+  var c = Object.keys(ans).length;
+  document.getElementById('check').disabled = c !== 6;
+  document.getElementById('checkHint').textContent = c === 6 ? 'All six are answered. You can check, and you can still change an answer.' : 'Answer all six questions to check. ' + c + ' of 6 answered.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  Object.keys(NAMES).forEach(function(k){ var b = document.getElementById('fb-' + k); if (b) b.innerHTML = ''; });
+}
+document.addEventListener('input', function(ev){
+  var t = ev.target;
+  if (t && t.getAttribute && t.getAttribute('data-f')) {
+    var v = parseFloat(t.value);
+    if (isFinite(v)) ans[t.getAttribute('data-f')] = v; else delete ans[t.getAttribute('data-f')];
+    if (checked) clearFeedback();
+    refresh();
+  }
+});
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('g-') === 0) {
+    ans[t.name.slice(2)] = t.value;
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function rightText(id){
+  var q1 = Q[0], q2 = Q[1];
+  if (id === 's1') return 'Cash from operations of ' + n(q1.ocf) + ' over net income of ' + n(q1.ni) + ' is ' + p1(share(q1)) + ' percent.';
+  if (id === 's2') return 'Cash from operations of ' + n(q2.ocf) + ' over net income of ' + n(q2.ni) + ' is ' + p1(share(q2)) + ' percent.';
+  if (id === 'c1') return n(q1.dio) + ' + ' + n(q1.dso) + ' \u2212 ' + n(q1.dpo) + ' = ' + n(ccc(q1)) + ' days.';
+  if (id === 'c2') return n(q2.dio) + ' + ' + n(q2.dso) + ' \u2212 ' + n(q2.dpo) + ' = ' + n(ccc(q2)) + ' days.';
+  if (id === 'line') { var mm = movedMost(q1, q2); return LINENAME[mm.id] + ' changed by ' + (mm.change[mm.id] > 0 ? 'up ' : 'down ') + n(Math.abs(mm.change[mm.id])) + ' days, more than the other two.'; }
+  return 'The cycle went from ' + n(ccc(q1)) + ' to ' + n(ccc(q2)) + ' days.';
+}
+function check(){
+  var res = evaluate(ans);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  res.checks.forEach(function(c){
+    var box = document.getElementById('fb-' + c.id);
+    box.innerHTML = '';
+    if (c.ok) box.appendChild(fbBox('correct', 'Correct.', rightText(c.id)));
+    else box.appendChild(fbBox(res.state === 'near' ? 'near' : 'wrong', res.state === 'near' ? 'Check this one.' : 'Not quite.', c.diag));
+  });
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. Both measures point the same way.', 'The share of net income that became cash fell from ' + p1(share(Q[0])) + ' to ' + p1(share(Q[1])) + ' percent while the cycle lengthened from ' + n(ccc(Q[0])) + ' to ' + n(ccc(Q[1])) + ' days. ' + LINENAME[movedMost(Q[0], Q[1]).id] + ' moved most.'));
+  } else if (res.state === 'near') {
+    sum.appendChild(fbBox('near', 'Close. Five of six answers are right, and the structure is right.', 'One answer is out of place: ' + NAMES[res.wrong[0].id] + '. Read the note on that answer.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 6 answers are out of place.', 'First move: write the share and the cycle as formulas, then fill in one quarter at a time. Change your answers and check again.'));
+  }
+  document.getElementById('second').hidden = false;
+  renderMoved();
+}
+document.getElementById('check').addEventListener('click', check);
+
+function renderMoved(){
+  var dso = parseInt(document.getElementById('dso').value, 10);
+  document.getElementById('dsoOut').textContent = n(dso);
+  var q2 = {label:Q[1].label, ni:Q[1].ni, ocf:Q[1].ocf, dio:Q[1].dio, dso:dso, dpo:Q[1].dpo};
+  var box = document.getElementById('moved');
+  box.innerHTML = '';
+  var mm = movedMost(Q[0], q2);
+  var dr = direction(Q[0], q2);
+  box.appendChild(h('p', {text:'Quarter 2 cycle: ' + n(q2.dio) + ' + ' + n(dso) + ' \u2212 ' + n(q2.dpo) + ' = ' + n(ccc(q2)) + ' days, against ' + n(ccc(Q[0])) + ' days in quarter 1.'}));
+  box.appendChild(h('p', {class:'chg', text: dr === 'lengthen' ? 'The cycle lengthened by ' + n(ccc(q2) - ccc(Q[0])) + ' days.' : (dr === 'shorten' ? 'The cycle shortened by ' + n(ccc(Q[0]) - ccc(q2)) + ' days.' : 'The cycle stayed the same.')}));
+  box.appendChild(h('p', {text:'Largest change in a day count: ' + LINENAME[mm.id] + ', ' + (mm.change[mm.id] >= 0 ? 'up ' : 'down ') + n(Math.abs(mm.change[mm.id])) + ' days.'}));
+  var even = Q[0].dio + Q[0].dso - Q[0].dpo - (Q[1].dio - Q[1].dpo);
+  box.appendChild(h('p', {class:'hint', text:'With the other quarter 2 figures fixed, the cycle matches quarter 1 when days sales outstanding is ' + n(even) + '.'}));
+}
+document.getElementById('dso').addEventListener('input', renderMoved);
+renderData();
+renderInputs();
+refresh();
+</script>
+</body>
+</html>

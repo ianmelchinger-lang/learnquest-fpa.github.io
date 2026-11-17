@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build the bridge from profit to cash</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.bridge{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;margin:.5rem 0}
+.bridge dt,.bridge dd{margin:0}
+.bridge dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.bridge .sum{border-top:2px solid var(--ink);padding-top:.35rem;font-weight:700}
+.tie-ok{color:var(--teal);font-weight:700}
+.tie-no{color:var(--amber);font-weight:700}
+.sw{display:flex;gap:.5rem;flex-wrap:wrap}
+.sw .opt{flex:0 0 auto;min-width:7rem}
+@media (max-width:480px){.bridge{grid-template-columns:1fr}.bridge dd{text-align:left}.sw .opt{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Build the bridge from profit to cash</h1>
+
+  <p>The statements share one set of numbers. Net income lifts retained earnings on the balance sheet, and it is also the first line of the cash flow statement. From there the cash flow statement converts profit to cash, and its ending cash must equal the cash on the balance sheet. You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer. Build the bridge for one product line, then test whether the links tie.</p>
+
+  <p><em>Retained earnings</em> are the profit a business has kept since it began. <em>Depreciation</em> is the cost of equipment spread over its life. <em>Receivables</em> are money customers owe, <em>inventory</em> is goods held, and <em>payables</em> are money owed to suppliers. All figures are USD millions for one quarter of Product line 4.</p>
+
+  <section class="card" aria-labelledby="bsHead">
+    <h2 id="bsHead" style="margin-top:0">What the statements show</h2>
+    <dl id="facts"></dl>
+  </section>
+
+  <section class="card" aria-labelledby="bridgeHead">
+    <h2 id="bridgeHead" style="margin-top:0">Your bridge, starting from net income of <span class="num" id="niOut"></span></h2>
+    <p>For each line, choose whether it adds to net income or subtracts from it on the way to cash from operations.</p>
+    <div id="adjs"></div>
+  </section>
+
+  <button type="button" class="primary" id="check" disabled>Test the links</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Choose add or subtract for all four lines to test.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Move one assumption</h2>
+    <p>Change where closing receivables end. Net income stays at the same figure. The bridge, with each sign set by the direction the balance moved, shows what happens to cash.</p>
+    <label class="fl" for="arClose">Closing receivables: <span class="num" id="arOut">160</span></label>
+    <input type="range" id="arClose" min="100" max="180" step="5" value="160">
+    <div class="panel" id="moved" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All figures in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var BASE = {ni:52, dep:16, ar:[140,160], inv:[90,82], ap:[70,65], cash0:100, cash1:106, re:[420,472], investing:-30, financing:-15};
+var ADJ = [
+  {id:'dep', name:'Depreciation'},
+  {id:'ar',  name:'Receivables'},
+  {id:'inv', name:'Inventory'},
+  {id:'ap',  name:'Payables'}
+];
+function dataWith(arClose){
+  var d = JSON.parse(JSON.stringify(BASE));
+  d.ar = [BASE.ar[0], arClose];
+  return d;
+}
+function delta(id, d){ return id === 'dep' ? d.dep : d[id][1] - d[id][0]; }
+/* Correct sign: +1 adds to net income, -1 subtracts. A rise in receivables or inventory uses cash.
+   A rise in payables keeps cash. Depreciation is added back. A fall reverses each sign. */
+function correctSign(id, d){
+  if (id === 'dep') return 1;
+  var dl = delta(id, d);
+  if (id === 'ar' || id === 'inv') return dl > 0 ? -1 : 1;
+  return dl > 0 ? 1 : -1;
+}
+function amount(id, d){ return id === 'dep' ? d.dep : Math.abs(delta(id, d)); }
+function bridge(signs, d){
+  var t = d.ni;
+  ADJ.forEach(function(a){ if (signs[a.id]) t += signs[a.id] * amount(a.id, d); });
+  return t;
+}
+function endingCash(ocf, d){ return d.cash0 + ocf + d.investing + d.financing; }
+function closingCashFor(d){
+  var keySigns = {};
+  ADJ.forEach(function(a){ keySigns[a.id] = correctSign(a.id, d); });
+  return endingCash(bridge(keySigns, d), d);
+}
+function scoreSigns(signs, d){
+  var right = [], wrong = [];
+  ADJ.forEach(function(a){ if (signs[a.id] === correctSign(a.id, d)) right.push(a.id); else wrong.push(a.id); });
+  var ocf = bridge(signs, d);
+  var end = endingCash(ocf, d);
+  return {right:right, wrong:wrong, ocf:ocf, end:end, diff:end - d.cash1,
+          tiesRE:(d.re[1] - d.re[0]) === d.ni,
+          state: wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong')};
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+function n(x){ return x.toLocaleString('en-US'); }
+function sn(x){ return (x < 0 ? '\u2212' : '') + Math.abs(x).toLocaleString('en-US'); }
+function movement(id, d){
+  if (id === 'dep') return 'Depreciation of ' + n(d.dep) + ' is included in net income.';
+  var nm = {ar:'Receivables', inv:'Inventory', ap:'Payables'}[id];
+  var dl = delta(id, d);
+  return nm + ': ' + n(d[id][0]) + ' to ' + n(d[id][1]) + ', ' + (dl >= 0 ? 'up ' : 'down ') + n(Math.abs(dl)) + '.';
+}
+
+var signs = {}, checked = false;
+
+function renderFacts(){
+  var dl = document.getElementById('facts');
+  dl.innerHTML = '';
+  dl.className = 'bridge';
+  function row(a, b){ dl.appendChild(h('dt', {text:a})); dl.appendChild(h('dd', {text:b})); }
+  row('Net income', n(BASE.ni));
+  row('Retained earnings, opening to closing', n(BASE.re[0]) + ' to ' + n(BASE.re[1]));
+  row('Cash, opening', n(BASE.cash0));
+  row('Cash, closing, on the balance sheet', n(BASE.cash1));
+  row('Cash spent on equipment (investing)', sn(BASE.investing));
+  row('Cash paid on a loan (financing)', sn(BASE.financing));
+  document.getElementById('niOut').textContent = n(BASE.ni);
+}
+function renderAdjs(){
+  var wrap = document.getElementById('adjs');
+  wrap.innerHTML = '';
+  ADJ.forEach(function(a){
+    var fs = h('fieldset', {class:'stmt'});
+    fs.appendChild(h('legend', {text:a.name + '. ' + movement(a.id, BASE)}));
+    var sw = h('div', {class:'sw'});
+    [['p','Add to net income'],['m','Subtract from net income']].forEach(function(o){
+      var id = 'r-' + a.id + '-' + o[0];
+      var lab = h('label', {class:'opt', 'for':id});
+      lab.appendChild(h('input', {type:'radio', name:'g-' + a.id, id:id, value:o[0]}));
+      lab.appendChild(h('span', {text:o[1]}));
+      sw.appendChild(lab);
+    });
+    fs.appendChild(sw);
+    wrap.appendChild(fs);
+    wrap.appendChild(h('div', {id:'fb-' + a.id}));
+  });
+}
+function refreshSelected(){
+  document.querySelectorAll('.opt').forEach(function(l){
+    var i = l.querySelector('input');
+    l.classList.toggle('sel', !!(i && i.checked));
+  });
+}
+function refresh(){
+  var c = Object.keys(signs).length;
+  document.getElementById('check').disabled = c !== ADJ.length;
+  document.getElementById('checkHint').textContent = c === ADJ.length ? 'All four lines are set. You can test, and you can still change a line.' : 'Choose add or subtract for all four lines to test. ' + c + ' of 4 set.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  ADJ.forEach(function(a){ document.getElementById('fb-' + a.id).innerHTML = ''; });
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('g-') === 0) {
+    signs[t.name.slice(2)] = t.value === 'p' ? 1 : -1;
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function reasonFor(id){
+  var dl = delta(id, BASE);
+  if (id === 'dep') return 'Depreciation lowered net income but no cash left the business, so the bridge adds it back.';
+  if (id === 'ar') return dl > 0 ? 'Receivables rose, so revenue was booked that customers have not yet paid. The bridge subtracts it.' : 'Receivables fell, so customers paid more than the sales booked. The bridge adds it.';
+  if (id === 'inv') return dl > 0 ? 'Inventory rose, so cash went into goods not yet sold. The bridge subtracts it.' : 'Inventory fell, so goods were sold from stock bought earlier. The bridge adds it.';
+  return dl > 0 ? 'Payables rose, so expenses were recorded that SEM has not yet paid. The bridge adds it.' : 'Payables fell, so SEM paid suppliers more than it recorded in new expenses. The bridge subtracts it.';
+}
+function check(){
+  var res = scoreSigns(signs, BASE);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  ADJ.forEach(function(a){
+    var box = document.getElementById('fb-' + a.id);
+    box.innerHTML = '';
+    if (res.right.indexOf(a.id) !== -1) box.appendChild(fbBox('correct', 'Correct.', reasonFor(a.id)));
+    else box.appendChild(fbBox(res.state === 'near' ? 'near' : 'wrong', res.state === 'near' ? 'Check this one.' : 'Not quite.', 'Start here: which way did this balance move, and did that movement use cash or release it?'));
+  });
+  var ties = h('div', {class:'panel'});
+  ties.appendChild(h('h3', {text:'The three links'}));
+  var dl = h('dl', {class:'bridge'});
+  function row(a, b, ok){
+    dl.appendChild(h('dt', {text:a}));
+    dl.appendChild(h('dd', {class: ok === undefined ? '' : (ok ? 'tie-ok' : 'tie-no'), text:b}));
+  }
+  row('Net income raises retained earnings: change of ' + n(BASE.re[1] - BASE.re[0]) + ' against net income of ' + n(BASE.ni), res.tiesRE ? 'Ties' : 'Does not tie', res.tiesRE);
+  row('The cash flow statement opens with net income of ' + n(BASE.ni), 'Ties', true);
+  row('Your cash from operations', n(res.ocf));
+  row('Ending cash: ' + n(BASE.cash0) + ' + ' + sn(res.ocf) + ' + (' + sn(BASE.investing) + ') + (' + sn(BASE.financing) + ')', n(res.end));
+  row('Balance sheet cash: ' + n(BASE.cash1), res.diff === 0 ? 'Ties' : 'Off by ' + sn(res.diff), res.diff === 0);
+  ties.appendChild(dl);
+  sum.appendChild(ties);
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. Ending cash ties to the balance sheet.', 'Net income of ' + n(BASE.ni) + ' became cash from operations of ' + n(res.ocf) + '. All three statements describe one business in one set of numbers.'));
+  } else if (res.state === 'near') {
+    var w = ADJ.filter(function(a){ return a.id === res.wrong[0]; })[0];
+    sum.appendChild(fbBox('near', 'Close. Three of four lines are right, and the structure is right.', 'One line is out of place: ' + w.name + '. It leaves ending cash off by ' + sn(res.diff) + '. Read that balance\u2019s direction again.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 4 lines are out of place.', 'First move: look at the direction each balance moved. Then ask whether that movement used cash or released it. Change your lines and test again.'));
+  }
+  document.getElementById('second').hidden = false;
+  renderMoved();
+}
+document.getElementById('check').addEventListener('click', check);
+
+function renderMoved(){
+  var ar = parseInt(document.getElementById('arClose').value, 10);
+  document.getElementById('arOut').textContent = n(ar);
+  var d = dataWith(ar);
+  var box = document.getElementById('moved');
+  box.innerHTML = '';
+  var dl = h('dl', {class:'bridge'});
+  function row(a, b, cls){ dl.appendChild(h('dt', {text:a})); dl.appendChild(h('dd', {class:cls || '', text:b})); }
+  row('Net income', n(d.ni));
+  var t = d.ni;
+  ADJ.forEach(function(a){
+    var s = correctSign(a.id, d), amt = amount(a.id, d);
+    t += s * amt;
+    row((s > 0 ? 'Add ' : 'Subtract ') + a.name.toLowerCase() + (a.id === 'ar' ? ' (' + n(d.ar[0]) + ' to ' + n(d.ar[1]) + ')' : ''), n(amt));
+  });
+  row('Cash from operations', n(t), 'sum');
+  row('Closing cash on the balance sheet', n(endingCash(t, d)));
+  box.appendChild(dl);
+  var dl1 = d.ar[1] - d.ar[0];
+  box.appendChild(h('p', {text: dl1 > 0
+    ? 'Receivables rose by ' + n(dl1) + ', so that amount of profit has not yet become cash.'
+    : (dl1 === 0 ? 'Receivables did not change, so they neither use nor release cash.'
+    : 'Receivables fell by ' + n(Math.abs(dl1)) + ', so customers paid more than the sales booked, and the sign on this line flips to add.')}));
+  box.appendChild(h('p', {class:'hint', text:'The sign on the receivables line flips when closing receivables fall below ' + n(BASE.ar[0]) + '.'}));
+}
+document.getElementById('arClose').addEventListener('input', renderMoved);
+renderFacts();
+renderAdjs();
+refresh();
+</script>
+</body>
+</html>

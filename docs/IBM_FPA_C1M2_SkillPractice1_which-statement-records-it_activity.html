@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which statement records it?</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.yn{display:flex;gap:.5rem;flex-wrap:wrap}
+.yn .opt{flex:0 0 auto;min-width:5.5rem;justify-content:flex-start}
+.stmt{margin:.7rem 0}
+.stmt legend{font-weight:600;font-size:.95rem}
+.cmp{display:grid;grid-template-columns:1fr auto auto;gap:.3rem .9rem;align-items:center;margin:.4rem 0}
+.cmp .chg{color:var(--amber);font-weight:700}
+@media (max-width:480px){.cmp{grid-template-columns:1fr}.yn .opt{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Which statement records it?</h1>
+
+  <p>Each financial statement answers its own question about a business. A transaction appears on a statement only when that statement&rsquo;s question gets a yes. You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer. Eight transactions follow. For each one, answer the three questions.</p>
+
+  <p>The income statement answers whether the business earned more than it spent, on an <em>accrual basis</em>: it records revenue when the business earns it and expenses when the business incurs them, whatever day the cash moves. The balance sheet answers what the business owns, owes, and has left for its owners, called <em>equity</em>, on one date. The cash flow statement answers how much cash came in and went out.</p>
+
+  <div id="txs"></div>
+
+  <button type="button" class="primary" id="check" disabled>Check my answers</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Answer all 24 questions to check.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Change the accounting basis</h2>
+    <p>On a <em>cash basis</em>, as this activity defines it, the income statement records revenue and expenses on the day cash moves. Switch the basis and see which transactions change their income statement answer. The other two statements stay the same.</p>
+    <button type="button" id="toggleBasis" aria-pressed="false">Switch to a cash basis</button>
+    <div class="panel" id="basisResult" hidden aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All transactions and amounts in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var STATEMENTS = [
+  {id:'is', name:'Income statement', test:'Did it change revenue or expense this quarter?'},
+  {id:'bs', name:'Balance sheet', test:'Did it change what SEM owns, owes, or its equity?'},
+  {id:'cf', name:'Cash flow statement', test:'Did cash move this quarter?'}
+];
+var TX = [
+  {id:'t1', title:'Credit sale',
+   fact:'SEM ships goods worth USD 2.0 million to a customer this quarter. The customer has 60 days to pay.',
+   key:{is:true, bs:true, cf:false}, revExp:true,
+   why:'The revenue is earned this quarter, so the income statement records it. The balance sheet gains a receivable. No cash has moved.'},
+  {id:'t2', title:'Collection',
+   fact:'A customer pays USD 1.5 million for goods that shipped last quarter.',
+   key:{is:false, bs:true, cf:true}, revExp:true,
+   why:'The revenue was recorded last quarter. This quarter the balance sheet swaps a receivable for cash, and the cash flow statement shows the cash coming in.'},
+  {id:'t3', title:'Loan repayment',
+   fact:'SEM repays USD 1.0 million of the principal on a bank loan.',
+   key:{is:false, bs:true, cf:true}, revExp:false,
+   why:'Repaying principal is not an expense. The balance sheet shows less cash and less debt, and the cash flow statement shows the cash going out.'},
+  {id:'t4', title:'Depreciation',
+   fact:'SEM records USD 0.3 million of depreciation on its plant equipment for the quarter. Depreciation spreads the cost of equipment over its life.',
+   key:{is:true, bs:true, cf:false}, revExp:true,
+   why:'Depreciation is an expense of the quarter, so the income statement records it and the balance sheet shows equipment worth less. No cash leaves.'},
+  {id:'t5', title:'Signed purchase order',
+   fact:'SEM signs a purchase order for USD 1.0 million of parts. Nothing is delivered or paid this quarter.',
+   key:{is:false, bs:false, cf:false}, revExp:false,
+   why:'A signed order is a promise. It changes nothing SEM owns, owes, or earned yet, and no cash moves, so no statement records it.'},
+  {id:'t6', title:'Paying last quarter\u2019s electricity bill',
+   fact:'SEM pays a USD 0.5 million electricity bill for energy it used last quarter. Last quarter\u2019s books recorded that expense.',
+   key:{is:false, bs:true, cf:true}, revExp:true,
+   why:'The expense belongs to last quarter. This quarter the balance sheet shows less cash and a smaller payable, and the cash flow statement shows the payment.'},
+  {id:'t7', title:'Electricity used, bill due later',
+   fact:'SEM uses USD 0.4 million of electricity this quarter. The bill is due next quarter.',
+   key:{is:true, bs:true, cf:false}, revExp:true,
+   why:'The expense is incurred this quarter, so the income statement records it. The balance sheet gains a payable. No cash has moved.'},
+  {id:'t8', title:'Cash sale',
+   fact:'SEM sells USD 0.2 million of spare parts and the customer pays at the counter.',
+   key:{is:true, bs:true, cf:true}, revExp:true,
+   why:'The revenue is earned and the cash arrives in the same quarter, so all three statements record it.'}
+];
+function scoreMatrix(ans){
+  var wrong = [];
+  TX.forEach(function(t){
+    STATEMENTS.forEach(function(s){
+      if (ans[t.id] === undefined || ans[t.id][s.id] !== t.key[s.id]) wrong.push({tx:t.id, st:s.id});
+    });
+  });
+  var state = wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong');
+  return {wrong:wrong, state:state};
+}
+/* Cash basis, as defined here: the income statement records revenue and expenses on the day cash moves. */
+function incomeOnCashBasis(t){ return t.revExp && t.key.cf; }
+function basisChanges(){
+  return TX.filter(function(t){ return t.key.is !== incomeOnCashBasis(t); }).map(function(t){ return t.id; });
+}
+function txById(id){ return TX.filter(function(t){ return t.id === id; })[0]; }
+function stById(id){ return STATEMENTS.filter(function(s){ return s.id === id; })[0]; }
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+var ans = {}, checked = false;
+
+function renderTx(){
+  var wrap = document.getElementById('txs');
+  TX.forEach(function(t){
+    var card = h('section', {class:'card', 'aria-labelledby':'t-' + t.id});
+    card.appendChild(h('h3', {id:'t-' + t.id, text:t.title}));
+    card.appendChild(h('p', {text:t.fact}));
+    STATEMENTS.forEach(function(s){
+      var fs = h('fieldset', {class:'stmt'});
+      fs.appendChild(h('legend', {text:s.name + ': ' + s.test}));
+      var yn = h('div', {class:'yn'});
+      [['y','Yes'],['n','No']].forEach(function(o){
+        var id = 'r-' + t.id + '-' + s.id + '-' + o[0];
+        var lab = h('label', {class:'opt', 'for':id});
+        lab.appendChild(h('input', {type:'radio', name:'a-' + t.id + '-' + s.id, id:id, value:o[0]}));
+        lab.appendChild(h('span', {text:o[1]}));
+        yn.appendChild(lab);
+      });
+      fs.appendChild(yn);
+      card.appendChild(fs);
+    });
+    card.appendChild(h('div', {id:'fb-' + t.id}));
+    wrap.appendChild(card);
+  });
+}
+function count(){
+  var n = 0;
+  TX.forEach(function(t){ if (ans[t.id]) STATEMENTS.forEach(function(s){ if (ans[t.id][s.id] !== undefined) n++; }); });
+  return n;
+}
+function refreshSelected(){
+  document.querySelectorAll('.opt').forEach(function(l){
+    var i = l.querySelector('input');
+    l.classList.toggle('sel', !!(i && i.checked));
+  });
+}
+function refresh(){
+  var n = count();
+  document.getElementById('check').disabled = n !== TX.length * STATEMENTS.length;
+  document.getElementById('checkHint').textContent = n === TX.length * STATEMENTS.length ? 'All 24 are answered. You can check, and you can still change an answer.' : 'Answer all 24 questions to check. ' + n + ' of 24 answered.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  TX.forEach(function(t){ document.getElementById('fb-' + t.id).innerHTML = ''; });
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('a-') === 0) {
+    var parts = t.name.split('-');
+    ans[parts[1]] = ans[parts[1]] || {};
+    ans[parts[1]][parts[2]] = (t.value === 'y');
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function check(){
+  var res = scoreMatrix(ans);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  TX.forEach(function(t){
+    var box = document.getElementById('fb-' + t.id);
+    box.innerHTML = '';
+    var bad = res.wrong.filter(function(w){ return w.tx === t.id; });
+    if (!bad.length) {
+      box.appendChild(fbBox('correct', 'Correct.', t.why));
+    } else {
+      var kind = res.state === 'near' ? 'near' : 'wrong';
+      var b = fbBox(kind, res.state === 'near' ? 'Check this one.' : 'Not quite.', 'Ask again: ' + bad.map(function(w){ return stById(w.st).name + ', \u201c' + stById(w.st).test + '\u201d'; }).join(' ') );
+      box.appendChild(b);
+    }
+  });
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. All 24 answers are right.', 'Each statement records a transaction only when its own question gets a yes. The balance sheet changes whenever what the business owns or owes changes. The income statement follows the quarter that earns or incurs the amount. The cash flow statement follows the day money moves.'));
+  } else if (res.state === 'near') {
+    var w = res.wrong[0];
+    sum.appendChild(fbBox('near', 'Close. 23 of 24 answers are right, and the structure is right.', 'One answer is out of place: \u201c' + txById(w.tx).title + '\u201d on the ' + stById(w.st).name.toLowerCase() + '. Ask that statement\u2019s question again.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 24 answers are out of place.', 'First move: for each flagged transaction, start with cash. Did money move this quarter? Then ask whether the revenue or expense belongs to this quarter. Change your answers and check again.'));
+  }
+  document.getElementById('second').hidden = false;
+}
+document.getElementById('check').addEventListener('click', check);
+
+var cashOn = false;
+function renderBasis(){
+  var box = document.getElementById('basisResult');
+  box.innerHTML = '';
+  if (!cashOn) { box.hidden = true; return; }
+  box.hidden = false;
+  box.appendChild(h('h3', {text:'Income statement answers, by basis'}));
+  var changed = basisChanges();
+  TX.forEach(function(t){
+    var acc = t.key.is, cash = incomeOnCashBasis(t);
+    var row = h('div', {class:'cmp'});
+    row.appendChild(h('span', {text:t.title}));
+    row.appendChild(h('span', {text:'Accrual: ' + (acc ? 'Yes' : 'No')}));
+    row.appendChild(h('span', {class: acc === cash ? '' : 'chg', text:'Cash: ' + (cash ? 'Yes' : 'No') + (acc === cash ? '' : ' (changes)')}));
+    box.appendChild(row);
+  });
+  box.appendChild(h('p', {text: changed.length + ' of ' + TX.length + ' transactions change their income statement answer. On the cash basis defined here, a sale counts when the customer pays, so a credit sale moves to the quarter of collection. An expense counts when the business pays, so electricity used this quarter moves to the quarter of payment. Depreciation never moves cash, so it does not appear.'}));
+}
+document.getElementById('toggleBasis').addEventListener('click', function(){
+  cashOn = !cashOn;
+  this.setAttribute('aria-pressed', cashOn ? 'true' : 'false');
+  this.textContent = cashOn ? 'Switch back to an accrual basis' : 'Switch to a cash basis';
+  renderBasis();
+});
+renderTx();
+refresh();
+</script>
+</body>
+</html>

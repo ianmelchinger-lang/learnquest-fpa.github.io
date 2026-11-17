@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which product line can fund its own expansion?</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.barline{display:grid;grid-template-columns:11rem 1fr;gap:.2rem .7rem;align-items:center;margin:.35rem 0}
+.track{background:var(--paper);border:1px solid var(--rule);height:1.6rem;position:relative}
+.fill{height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:.4rem;color:#fff;font-weight:700;font-variant-numeric:tabular-nums;font-size:.9rem;min-width:2.2rem}
+.fill.ni{background:var(--slate)}
+.fill.cash{background:var(--teal)}
+.lineres h3{margin-top:0}
+.rankrow{display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem;margin:.2rem 0}
+@media (max-width:480px){.barline{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Which product line can fund its own expansion?</h1>
+
+  <p>Sample Enterprise Manufacturing (SEM) has four product lines. Three of them each ask to fund an expansion from what their own operations generate this quarter. You advise SEM&rsquo;s finance team on which line can fund the most. All figures are USD millions for the quarter.</p>
+
+  <p>Four terms appear below. <em>Receivables</em> are money customers owe. <em>Inventory</em> is goods the business holds. <em>Payables</em> are money the business owes suppliers. <em>Depreciation</em> is the cost of equipment spread over its life and recorded each quarter.</p>
+
+  <div id="lines"></div>
+
+  <section class="order" aria-labelledby="orderHead">
+    <h2 id="orderHead" style="margin-top:0">Your ranking</h2>
+    <p>Rank the three lines by how much each can fund from its own operations this quarter. Put the line that can fund the most first. Use the buttons on each line to add it, then arrange the order.</p>
+    <ol class="picks" id="picks" aria-labelledby="orderHead"></ol>
+    <p class="empty" id="emptyNote">No lines added yet.</p>
+    <p class="hint" id="firstNote" hidden></p>
+    <button type="button" class="primary" id="commit" disabled>Commit my ranking</button>
+    <p class="hint" style="margin-top:.6rem">Your result appears below after you commit.</p>
+  </section>
+
+  <div class="sr" id="live" aria-live="polite"></div>
+
+  <section id="reveal" hidden aria-labelledby="revealHead">
+    <h2 id="revealHead" tabindex="-1">What each line can actually fund</h2>
+    <div id="revealBody"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All figures in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var LINES = [
+  {id:'p1', name:'Product line 1', ni:82, dep:12, dAR:58, dInv:22, dAP:10},
+  {id:'p2', name:'Product line 2', ni:60, dep:14, dAR:18, dInv:6,  dAP:4},
+  {id:'p3', name:'Product line 3', ni:45, dep:18, dAR:-3, dInv:-2, dAP:1}
+];
+function lineById(id){
+  for (var i = 0; i < LINES.length; i++) { if (LINES[i].id === id) return LINES[i]; }
+  return null;
+}
+/* Cash from operations: net income, plus depreciation, minus rises in receivables and inventory, plus rises in payables. */
+function opCash(l){ return l.ni + l.dep - l.dAR - l.dInv + l.dAP; }
+function sharePct(l){ return opCash(l) / l.ni * 100; }
+function orderBy(fn){
+  return LINES.slice().sort(function(a, b){ return fn(b) - fn(a); }).map(function(l){ return l.id; });
+}
+function sameOrder(a, b){
+  if (a.length !== b.length) return false;
+  for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+function evaluate(order){
+  if (!Array.isArray(order) || order.length !== 3) return {error:'Rank exactly three lines.'};
+  var seen = {};
+  for (var i = 0; i < order.length; i++) {
+    if (!lineById(order[i])) return {error:'Unknown line.'};
+    if (seen[order[i]]) return {error:'Each line can appear once.'};
+    seen[order[i]] = true;
+  }
+  var niOrder = orderBy(function(l){ return l.ni; });
+  var cashOrder = orderBy(opCash);
+  var verdict = sameOrder(order, niOrder) ? 'profit' : (sameOrder(order, cashOrder) ? 'cash' : 'mixed');
+  return {order:order, niOrder:niOrder, cashOrder:cashOrder, verdict:verdict};
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+function fmtUsd(n){ return 'USD ' + n.toLocaleString('en-US') + ' million'; }
+function fmtPct(n){ return n.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' percent'; }
+function moveText(n){ return n >= 0 ? 'Up ' + n.toLocaleString('en-US') : 'Down ' + Math.abs(n).toLocaleString('en-US'); }
+function nameOf(id){ return lineById(id).name; }
+
+var state = {picks:[], locked:false, firstOrder:null};
+function say(msg){ document.getElementById('live').textContent = msg; }
+
+function renderLines(){
+  var wrap = document.getElementById('lines');
+  wrap.innerHTML = '';
+  LINES.forEach(function(l){
+    var picked = state.picks.indexOf(l.id) !== -1;
+    var card = h('section', {class:'card' + (picked ? ' picked' : ''), 'aria-labelledby':'t-' + l.id});
+    card.appendChild(h('h3', {id:'t-' + l.id, text:l.name}));
+    var dl = h('dl');
+    [['Net income this quarter', fmtUsd(l.ni)],
+     ['Depreciation included in net income', fmtUsd(l.dep)],
+     ['Receivables, change in the quarter', moveText(l.dAR)],
+     ['Inventory, change in the quarter', moveText(l.dInv)],
+     ['Payables, change in the quarter', moveText(l.dAP)]
+    ].forEach(function(r){ dl.appendChild(h('dt', {text:r[0]})); dl.appendChild(h('dd', {text:r[1]})); });
+    card.appendChild(dl);
+    var btn = h('button', {type:'button', class:'small', 'data-add':l.id,
+      'aria-label':(picked ? 'Added to ranking: ' : 'Add to my ranking: ') + l.name,
+      text: picked ? 'Added' : 'Add to my ranking'});
+    btn.disabled = state.locked || picked || state.picks.length >= 3;
+    card.appendChild(btn);
+    wrap.appendChild(card);
+  });
+}
+function renderPicks(){
+  var ol = document.getElementById('picks');
+  ol.innerHTML = '';
+  state.picks.forEach(function(id, idx){
+    var li = h('li');
+    li.appendChild(h('span', {class:'rank', text:String(idx+1), 'aria-hidden':'true'}));
+    li.appendChild(h('div', null, [
+      h('span', {class:'sr', text:'Rank ' + (idx+1) + '. '}),
+      h('span', {class:'a-title', text:nameOf(id)})
+    ]));
+    var ctr = h('div', {class:'pick-ctrls'});
+    var up = h('button', {type:'button', class:'small', 'data-up':id, 'aria-label':'Move up: ' + nameOf(id), text:'Move up'});
+    var dn = h('button', {type:'button', class:'small', 'data-down':id, 'aria-label':'Move down: ' + nameOf(id), text:'Move down'});
+    var rm = h('button', {type:'button', class:'small', 'data-remove':id, 'aria-label':'Remove: ' + nameOf(id), text:'Remove'});
+    up.disabled = state.locked || idx === 0;
+    dn.disabled = state.locked || idx === state.picks.length - 1;
+    rm.disabled = state.locked;
+    ctr.appendChild(up); ctr.appendChild(dn); ctr.appendChild(rm);
+    li.appendChild(ctr);
+    ol.appendChild(li);
+  });
+  document.getElementById('emptyNote').hidden = state.picks.length > 0;
+  var commit = document.getElementById('commit');
+  commit.disabled = state.locked || state.picks.length !== 3;
+  commit.hidden = state.locked;
+  var fn = document.getElementById('firstNote');
+  if (state.firstOrder && !state.locked) {
+    fn.hidden = false;
+    fn.textContent = 'Your first committed ranking: ' + state.firstOrder.map(nameOf).join(', then ') + '.';
+  } else { fn.hidden = true; }
+}
+function renderAll(){ renderLines(); renderPicks(); }
+
+function barLine(label, cls, value, scale){
+  var wrap = h('div', {class:'barline'});
+  wrap.appendChild(h('span', {text:label}));
+  var track = h('div', {class:'track'});
+  var fill = h('div', {class:'fill ' + cls, text:value.toLocaleString('en-US')});
+  fill.style.width = Math.max(value / scale * 100, 0) + '%';
+  track.appendChild(fill);
+  wrap.appendChild(track);
+  return wrap;
+}
+
+function buildReveal(res){
+  var body = document.getElementById('revealBody');
+  body.innerHTML = '';
+  var scale = 0;
+  LINES.forEach(function(l){ scale = Math.max(scale, l.ni, opCash(l)); });
+
+  body.appendChild(h('p', {text:'Each pair of bars shows the profit a line reported and the cash its operations generated in the same quarter. Figures are USD millions.'}));
+  LINES.forEach(function(l){
+    var oc = opCash(l);
+    var card = h('section', {class:'card lineres', 'aria-label':l.name + ' results'});
+    card.appendChild(h('h3', {text:l.name}));
+    card.appendChild(barLine('Net income', 'ni', l.ni, scale));
+    card.appendChild(barLine('Cash from operations', 'cash', oc, scale));
+    card.appendChild(h('p', {class:'hint', style:'margin:.4rem 0 0', text:'Cash from operations is ' + fmtPct(sharePct(l)) + ' of net income.'}));
+    body.appendChild(card);
+  });
+
+  body.appendChild(h('h3', {text:'How your ranking compares'}));
+  var comp = h('div', {class:'panel'});
+  [['Your ranking', res.order], ['Ranked by net income', res.niOrder], ['Ranked by cash from operations', res.cashOrder]].forEach(function(r){
+    comp.appendChild(h('div', {class:'rankrow'}, [h('b', {text:r[0] + ':'}), h('span', {text:r[1].map(nameOf).join(', then ')})]));
+  });
+  body.appendChild(comp);
+
+  var msg;
+  if (res.verdict === 'profit') {
+    msg = 'Your ranking follows net income. Ranked by cash from operations, the order reverses. ' + nameOf(res.niOrder[0]) + ' reported the most profit and generated the least cash.';
+  } else if (res.verdict === 'cash') {
+    msg = 'Your ranking matches the cash order. You looked past the profit line to the cash behind it. Ranked by net income, the order reverses.';
+  } else {
+    msg = 'Your ranking follows neither the profit order nor the cash order. By net income, ' + nameOf(res.niOrder[0]) + ' ranks first. By cash from operations, ' + nameOf(res.cashOrder[0]) + ' does.';
+  }
+  body.appendChild(h('p', {class:'verdict', text:msg}));
+  body.appendChild(h('p', {text:'Net income sits on one statement. The cash a line generates depends on movements that statement does not carry, so the two orders can differ.'}));
+
+  var cap = h('div', {class:'capability'});
+  cap.appendChild(h('h3', {text:'The capability this points to'}));
+  cap.appendChild(h('p', {text:'Before cash can be planned, finance has to read the three statements as one connected system, so every profit figure arrives with the cash figure behind it.'}));
+  body.appendChild(cap);
+
+  body.appendChild(h('div', {class:'again'}, [h('button', {type:'button', id:'again', text:'Rank again'})]));
+}
+
+function commit(){
+  var res = evaluate(state.picks);
+  if (res.error) { say(res.error); return; }
+  if (!state.firstOrder) state.firstOrder = state.picks.slice();
+  state.locked = true;
+  renderAll();
+  buildReveal(res);
+  document.getElementById('reveal').hidden = false;
+  var hd = document.getElementById('revealHead');
+  hd.focus();
+  if (hd.scrollIntoView) {
+    var rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    hd.scrollIntoView({behavior: rm ? 'auto' : 'smooth', block:'start'});
+  }
+  say('Result shown below.');
+}
+
+document.addEventListener('click', function(ev){
+  var btn = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+  if (!btn || btn.disabled) return;
+  var id;
+  if ((id = btn.getAttribute('data-add'))) {
+    if (state.picks.length < 3 && state.picks.indexOf(id) === -1) {
+      state.picks.push(id); renderAll();
+      say('Added. ' + state.picks.length + ' of 3 lines in your ranking.');
+    }
+  } else if ((id = btn.getAttribute('data-remove'))) {
+    state.picks.splice(state.picks.indexOf(id), 1); renderAll();
+    say('Removed. ' + state.picks.length + ' of 3 lines in your ranking.');
+  } else if ((id = btn.getAttribute('data-up'))) {
+    var i = state.picks.indexOf(id);
+    if (i > 0) { state.picks.splice(i-1, 0, state.picks.splice(i, 1)[0]); renderAll(); focusMove(id, 'up'); say('Moved to rank ' + i + '.'); }
+  } else if ((id = btn.getAttribute('data-down'))) {
+    var j = state.picks.indexOf(id);
+    if (j > -1 && j < state.picks.length - 1) { state.picks.splice(j+1, 0, state.picks.splice(j, 1)[0]); renderAll(); focusMove(id, 'down'); say('Moved to rank ' + (j+2) + '.'); }
+  } else if (btn.id === 'commit') {
+    commit();
+  } else if (btn.id === 'again') {
+    state.locked = false;
+    document.getElementById('reveal').hidden = true;
+    renderAll();
+    var first = document.getElementById('orderHead');
+    first.setAttribute('tabindex', '-1'); first.focus();
+    say('Ranking unlocked. Change your ranking and commit again.');
+  }
+});
+function focusMove(id, dir){
+  var b = document.querySelector('[data-' + dir + '="' + id + '"]');
+  if (!b || b.disabled) b = document.querySelector('[data-' + (dir === 'up' ? 'down' : 'up') + '="' + id + '"]');
+  if (b) b.focus();
+}
+renderAll();
+</script>
+</body>
+</html>
