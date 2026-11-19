@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design the view for each reader</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.sw{display:flex;gap:.5rem;flex-wrap:wrap}
+.sw .opt{flex:1 1 9rem}
+.stmt{margin:.6rem 0}
+.stmt legend{font-weight:600;font-size:.95rem}
+.viewcard{background:var(--teal-soft);border:1px solid var(--teal);padding:.6rem .8rem;margin:.5rem 0}
+.viewcard b{display:block}
+.rad{display:grid;gap:.4rem}
+@media (max-width:480px){.sw .opt{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Design the view for each reader</h1>
+
+  <p><em>Stakeholder segmentation</em> means building a separate view of the numbers for each audience, instead of sending everyone the same report. The audience sets three design choices. The first is how often the view refreshes, which follows how often the reader&rsquo;s decision comes up. The second is how much the view aggregates. The third is which kind of decision the view supports.</p>
+
+  <p>You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer. Three readers need a view of the same performance data. For each reader, read the decision they own and choose the three design settings.</p>
+
+  <div id="cards"></div>
+
+  <button type="button" class="primary" id="check" disabled>Check my views</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Choose all nine settings to check.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Change how often a decision comes up</h2>
+    <p>The Plant supervisor&rsquo;s decision stays the same. Change how often it comes up and watch the refresh setting that fits.</p>
+    <fieldset>
+      <legend>How often the Plant supervisor decides</legend>
+      <div class="rad" id="freqOpts"></div>
+    </fieldset>
+    <div class="panel" id="freqResult" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All readers, decisions, and views in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var FREQ = {daily:'Daily', weekly:'Weekly', monthly:'Monthly', quarterly:'Quarterly'};
+var DETAIL = {line:'Line-level detail', summary:'Summary across the business'};
+var KIND = {realloc:'Reallocate resources', correct:'Correct course', investor:'Communicate with investors'};
+var READERS = [
+  {id:'cfo', title:'Chief financial officer',
+   decision:'Choose where to direct capital across SEM\u2019s plants and product lines.',
+   arises:'monthly', needs:'The result for each plant and product line, set side by side, without every transaction.',
+   key:{freq:'monthly', detail:'summary', kind:'realloc'}},
+  {id:'plant', title:'Plant supervisor',
+   decision:'Adjust this week\u2019s shift schedule and line assignments.',
+   arises:'weekly', needs:'Every line at the plant, one by one, with the detail behind each.',
+   key:{freq:'weekly', detail:'line', kind:'correct'}},
+  {id:'ir', title:'Head of investor relations',
+   decision:'Decide what to tell investors about SEM\u2019s trajectory.',
+   arises:'quarterly', needs:'The trajectory of the business as a whole, in a few figures.',
+   key:{freq:'quarterly', detail:'summary', kind:'investor'}}
+];
+var CHOICES = [
+  {id:'freq', name:'How often it refreshes', options:FREQ},
+  {id:'detail', name:'How much it aggregates', options:DETAIL},
+  {id:'kind', name:'The decision it supports', options:KIND}
+];
+function readerById(id){ return READERS.filter(function(r){ return r.id === id; })[0]; }
+/* The refresh setting follows how often the reader's decision comes up. */
+function freqKey(reader, arisesOverride){ return arisesOverride || reader.arises; }
+function scoreViews(sel){
+  var wrong = [];
+  READERS.forEach(function(r){
+    CHOICES.forEach(function(c){
+      if (!sel[r.id] || sel[r.id][c.id] !== r.key[c.id]) wrong.push({r:r.id, c:c.id});
+    });
+  });
+  return {wrong:wrong, state: wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong')};
+}
+function distinctViews(){
+  var seen = {};
+  READERS.forEach(function(r){ seen[r.key.freq + '|' + r.key.detail + '|' + r.key.kind] = true; });
+  return Object.keys(seen).length;
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+var EVERY = {daily:'Every day', weekly:'Every week', monthly:'Every month', quarterly:'Every quarter'};
+var sel = {}, checked = false;
+function renderCards(){
+  var wrap = document.getElementById('cards');
+  READERS.forEach(function(r){
+    var card = h('section', {class:'card', 'aria-labelledby':'t-' + r.id});
+    card.appendChild(h('h3', {id:'t-' + r.id, text:r.title}));
+    var dl = h('dl');
+    [['The decision they own', r.decision], ['How often it comes up', EVERY[r.arises]], ['What they need to see', r.needs]].forEach(function(x){
+      dl.appendChild(h('dt', {text:x[0]})); dl.appendChild(h('dd', {text:x[1]}));
+    });
+    card.appendChild(dl);
+    CHOICES.forEach(function(c){
+      var fs = h('fieldset', {class:'stmt'});
+      fs.appendChild(h('legend', {text:c.name}));
+      var sw = h('div', {class:'sw'});
+      Object.keys(c.options).forEach(function(k){
+        var id = 'r-' + r.id + '-' + c.id + '-' + k;
+        var lab = h('label', {class:'opt', 'for':id});
+        lab.appendChild(h('input', {type:'radio', name:'g-' + r.id + '-' + c.id, id:id, value:k}));
+        lab.appendChild(h('span', {text:c.options[k]}));
+        sw.appendChild(lab);
+      });
+      fs.appendChild(sw);
+      card.appendChild(fs);
+    });
+    card.appendChild(h('div', {id:'fb-' + r.id}));
+    wrap.appendChild(card);
+  });
+}
+function count(){ var n = 0; READERS.forEach(function(r){ if (sel[r.id]) n += Object.keys(sel[r.id]).length; }); return n; }
+function refreshSelected(){ document.querySelectorAll('.opt').forEach(function(l){ var i = l.querySelector('input'); l.classList.toggle('sel', !!(i && i.checked)); }); }
+function refresh(){
+  var c = count();
+  document.getElementById('check').disabled = c !== 9;
+  document.getElementById('checkHint').textContent = c === 9 ? 'All nine settings are chosen. You can check, and you can still change a setting.' : 'Choose all nine settings to check. ' + c + ' of 9 chosen.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  READERS.forEach(function(r){ document.getElementById('fb-' + r.id).innerHTML = ''; });
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('g-') === 0) {
+    var p = t.name.split('-');
+    sel[p[1]] = sel[p[1]] || {};
+    sel[p[1]][p[2]] = t.value;
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+  if (t && t.type === 'radio' && t.name === 'freq') { arisesPlant = t.value; refreshSelected(); renderFreq(); }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function viewLine(r){
+  return FREQ[r.key.freq] + ', ' + DETAIL[r.key.detail].toLowerCase() + ', to ' + KIND[r.key.kind].toLowerCase() + '.';
+}
+function check(){
+  var res = scoreViews(sel);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  READERS.forEach(function(r){
+    var box = document.getElementById('fb-' + r.id);
+    box.innerHTML = '';
+    var bad = res.wrong.filter(function(w){ return w.r === r.id; });
+    if (!bad.length) {
+      box.appendChild(fbBox('correct', 'Correct.', r.title + ' gets a view that refreshes ' + FREQ[r.key.freq].toLowerCase() + ', shows ' + DETAIL[r.key.detail].toLowerCase() + ', and supports a decision to ' + KIND[r.key.kind].toLowerCase() + '.'));
+    } else {
+      var b = h('div', {class:'fb ' + (res.state === 'near' ? 'near' : 'wrong')});
+      b.appendChild(h('b', {text: res.state === 'near' ? 'Check this one.' : 'Not quite.'}));
+      b.appendChild(h('p', {text:'Start with the decision this reader owns. How often does it come up? How much detail does it need? Which kind of decision is it?'}));
+      b.appendChild(h('p', {text:'Settings to recheck: ' + bad.map(function(w){ return CHOICES.filter(function(c){ return c.id === w.c; })[0].name.toLowerCase(); }).join('; ') + '.'}));
+      box.appendChild(b);
+    }
+  });
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. All nine settings are right.', 'No two readers share all three settings, so each gets a view of its own. Two readers receive a summary across the business, and they differ in how often they decide and what the decision is for. FP&A holds the full set with the links between the views intact.'));
+  } else if (res.state === 'near') {
+    var w = res.wrong[0];
+    sum.appendChild(fbBox('near', 'Close. Eight of nine settings are right, and the structure is right.', 'One setting is out of place: ' + CHOICES.filter(function(c){ return c.id === w.c; })[0].name.toLowerCase() + ' for the ' + readerById(w.r).title + '.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 9 settings are out of place.', 'First move: start with the decision each reader owns, and let that decision set the three settings. A single set of settings for everyone leaves most readers searching for their own part. Change your settings and check again.'));
+  }
+  document.getElementById('second').hidden = false;
+  renderFreqOpts();
+  renderFreq();
+}
+document.getElementById('check').addEventListener('click', check);
+
+var arisesPlant = 'weekly';
+function renderFreqOpts(){
+  var box = document.getElementById('freqOpts');
+  if (box.children.length) return;
+  ['daily','weekly','monthly'].forEach(function(k){
+    var id = 'f-' + k;
+    var lab = h('label', {class:'opt' + (k === arisesPlant ? ' sel' : ''), 'for':id});
+    var inp = h('input', {type:'radio', name:'freq', id:id, value:k});
+    if (k === arisesPlant) inp.checked = true;
+    lab.appendChild(inp);
+    lab.appendChild(h('span', {text:'The decision comes up ' + FREQ[k].toLowerCase()}));
+    box.appendChild(lab);
+  });
+}
+function renderFreq(){
+  var box = document.getElementById('freqResult');
+  box.innerHTML = '';
+  var r = readerById('plant');
+  var f = freqKey(r, arisesPlant);
+  box.appendChild(h('h3', {text:'The Plant supervisor\u2019s view'}));
+  box.appendChild(h('p', {text:'The decision comes up ' + FREQ[f].toLowerCase() + ', so the view refreshes ' + FREQ[f].toLowerCase() + '. It still shows ' + DETAIL[r.key.detail].toLowerCase() + ' and supports a decision to ' + KIND[r.key.kind].toLowerCase() + '.'}));
+  box.appendChild(h('p', {class:'hint', text:'The detail and the decision type did not change. The refresh followed the decision. A view built around the analyst\u2019s convenience would keep its schedule whatever the reader decides.'}));
+}
+renderCards();
+refresh();
+</script>
+</body>
+</html>

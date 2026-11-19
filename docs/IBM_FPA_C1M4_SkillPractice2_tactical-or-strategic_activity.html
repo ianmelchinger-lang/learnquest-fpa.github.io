@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tactical or strategic request?</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.sw{display:flex;gap:.5rem;flex-wrap:wrap}
+.sw .opt{flex:0 0 auto;min-width:8rem}
+.stmt{margin:.6rem 0}
+.cmp{display:grid;grid-template-columns:1fr auto auto;gap:.3rem .9rem;align-items:start;margin:.5rem 0;padding-bottom:.5rem;border-bottom:1px solid var(--rule)}
+.cmp:last-child{border-bottom:0}
+.cmp .chg{color:var(--amber);font-weight:700}
+@media (max-width:480px){.cmp{grid-template-columns:1fr}.sw .opt{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Tactical or strategic request?</h1>
+
+  <p>Finance work divides into two kinds. <em>Tactical</em> work supports decisions that middle managers and operational teams own, over a horizon of about one to two years. <em>Strategic</em> work supports decisions that the Chief financial officer and executive leadership own, over a horizon of about three to five years. The split is a division of labor, and each kind depends on the other.</p>
+
+  <p>You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer. Eight requests arrived this month. For each one, read who owns the decision and how far ahead it reaches, and mark the request tactical or strategic.</p>
+
+  <div id="cards"></div>
+
+  <button type="button" class="primary" id="check" disabled>Check my sort</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Sort all eight requests to check.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Sort by a different test</h2>
+    <p>Many analysts sort by the tool a request uses, because both kinds of work share tools. Switch the test and see where the two sorts disagree.</p>
+    <button type="button" id="toggleTest" aria-pressed="false">Sort by the tool instead</button>
+    <div class="panel" id="testResult" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All requests in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var REQS = [
+  {id:'r1', title:'Consolidate the regional budgets into the annual plan',
+   owner:'Regional operations managers', ownerKind:'middle', years:1, tool:'Spreadsheet', recurring:true},
+  {id:'r2', title:'Support the monthly close for the Operations function',
+   owner:'Operations managers', ownerKind:'middle', years:1, tool:'Variance analysis', recurring:true},
+  {id:'r3', title:'Model three scenarios for building a plant in a new region',
+   owner:'Chief financial officer and executive leadership', ownerKind:'exec', years:5, tool:'Scenario model', recurring:false},
+  {id:'r4', title:'Run a five-year variance analysis to decide whether to close an underperforming plant',
+   owner:'Executive leadership', ownerKind:'exec', years:5, tool:'Variance analysis', recurring:false},
+  {id:'r5', title:'Track headcount against the approved hiring plan',
+   owner:'Department heads', ownerKind:'middle', years:1, tool:'Spreadsheet', recurring:true},
+  {id:'r6', title:'Test a scenario for next quarter\u2019s freight costs for the logistics manager',
+   owner:'Logistics manager', ownerKind:'middle', years:1, tool:'Scenario model', recurring:false},
+  {id:'r7', title:'Draft the long-range plan inputs for the board',
+   owner:'Chief financial officer and executive leadership', ownerKind:'exec', years:4, tool:'Forecast', recurring:false},
+  {id:'r8', title:'Evaluate a proposal to acquire a parts distributor',
+   owner:'Executive leadership', ownerKind:'exec', years:5, tool:'Forecast', recurring:false}
+];
+/* Key: tactical when a middle manager owns the decision and it reaches two years or fewer.
+   Strategic when executive leadership owns it and it reaches three to five years. */
+function keyFor(r){
+  if (r.ownerKind === 'middle' && r.years <= 2) return 'T';
+  if (r.ownerKind === 'exec' && r.years >= 3 && r.years <= 5) return 'S';
+  return null;
+}
+function byTool(r){ return (r.tool === 'Spreadsheet' || r.tool === 'Variance analysis') ? 'T' : 'S'; }
+function byRecurrence(r){ return r.recurring ? 'T' : 'S'; }
+function scoreSort(ans){
+  var wrong = REQS.filter(function(r){ return ans[r.id] !== keyFor(r); }).map(function(r){ return r.id; });
+  return {wrong:wrong, state: wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong')};
+}
+function reqById(id){ return REQS.filter(function(r){ return r.id === id; })[0]; }
+function disagreements(fn){ return REQS.filter(function(r){ return fn(r) !== keyFor(r); }).map(function(r){ return r.id; }); }
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+var NAME = {T:'Tactical', S:'Strategic'};
+var ans = {}, checked = false;
+function renderCards(){
+  var wrap = document.getElementById('cards');
+  REQS.forEach(function(r){
+    var card = h('section', {class:'card', 'aria-labelledby':'t-' + r.id});
+    card.appendChild(h('h3', {id:'t-' + r.id, text:r.title}));
+    var dl = h('dl');
+    [['Who owns the decision', r.owner], ['How far ahead it reaches', r.years === 1 ? 'About one year or less' : r.years + ' years'], ['Main tool', r.tool]].forEach(function(x){
+      dl.appendChild(h('dt', {text:x[0]})); dl.appendChild(h('dd', {text:x[1]}));
+    });
+    card.appendChild(dl);
+    var fs = h('fieldset', {class:'stmt'});
+    fs.appendChild(h('legend', {text:'Which kind of finance work is this?'}));
+    var sw = h('div', {class:'sw'});
+    ['T','S'].forEach(function(t){
+      var id = 'r-' + r.id + '-' + t;
+      var lab = h('label', {class:'opt', 'for':id});
+      lab.appendChild(h('input', {type:'radio', name:'g-' + r.id, id:id, value:t}));
+      lab.appendChild(h('span', {text:NAME[t]}));
+      sw.appendChild(lab);
+    });
+    fs.appendChild(sw);
+    card.appendChild(fs);
+    card.appendChild(h('div', {id:'fb-' + r.id}));
+    wrap.appendChild(card);
+  });
+}
+function refreshSelected(){ document.querySelectorAll('.opt').forEach(function(l){ var i = l.querySelector('input'); l.classList.toggle('sel', !!(i && i.checked)); }); }
+function refresh(){
+  var c = Object.keys(ans).length;
+  document.getElementById('check').disabled = c !== REQS.length;
+  document.getElementById('checkHint').textContent = c === REQS.length ? 'All eight are sorted. You can check, and you can still change a placement.' : 'Sort all eight requests to check. ' + c + ' of 8 sorted.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  REQS.forEach(function(r){ document.getElementById('fb-' + r.id).innerHTML = ''; });
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('g-') === 0) {
+    ans[t.name.slice(2)] = t.value;
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function why(r){
+  var k = keyFor(r);
+  return k === 'T'
+    ? 'A middle manager owns the decision and it reaches about a year or less, so this is tactical work.'
+    : 'Executive leadership owns the decision and it reaches ' + r.years + ' years, so this is strategic work.';
+}
+function check(){
+  var res = scoreSort(ans);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  REQS.forEach(function(r){
+    var box = document.getElementById('fb-' + r.id);
+    box.innerHTML = '';
+    if (res.wrong.indexOf(r.id) === -1) box.appendChild(fbBox('correct', 'Correct.', why(r)));
+    else {
+      var b = h('div', {class:'fb ' + (res.state === 'near' ? 'near' : 'wrong')});
+      b.appendChild(h('b', {text: res.state === 'near' ? 'Check this one.' : 'Not quite.'}));
+      b.appendChild(h('p', {text:'Ask two questions.'}));
+      b.appendChild(h('p', {text:'Who owns the decision?'}));
+      b.appendChild(h('p', {text:'How many years ahead does it reach?'}));
+      box.appendChild(b);
+    }
+  });
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. All eight are sorted.', 'Four requests are tactical and four are strategic. Two of them use the tool that looks like the other kind of work. The decision owner and the horizon decided each one. The two kinds depend on each other, because a scenario for the board starts from actuals that the monthly close produced.'));
+  } else if (res.state === 'near') {
+    sum.appendChild(fbBox('near', 'Close. Seven of eight are sorted correctly, and the structure is right.', 'One request is out of place: \u201c' + reqById(res.wrong[0]).title + '\u201d. Read who owns it and how far ahead it reaches.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 8 are out of place.', 'First move: for each flagged request, name who owns the decision, then count how many years ahead it reaches. Change your placements and check again.'));
+  }
+  document.getElementById('second').hidden = false;
+  renderTest();
+}
+document.getElementById('check').addEventListener('click', check);
+
+var byToolOn = false;
+function renderTest(){
+  var box = document.getElementById('testResult');
+  box.innerHTML = '';
+  if (!byToolOn) { box.hidden = true; return; }
+  box.hidden = false;
+  box.appendChild(h('h3', {text:'Sorting by tool, against sorting by decision'}));
+  var dis = disagreements(byTool);
+  REQS.forEach(function(r){
+    var k = keyFor(r), t = byTool(r);
+    var row = h('div', {class:'cmp'});
+    row.appendChild(h('span', {text:r.title + ' (' + r.tool + ')'}));
+    row.appendChild(h('span', {text:'By decision: ' + NAME[k]}));
+    row.appendChild(h('span', {class: k === t ? '' : 'chg', text:'By tool: ' + NAME[t] + (k === t ? '' : ' (differs)')}));
+    box.appendChild(row);
+  });
+  box.appendChild(h('p', {text: dis.length + ' of 8 requests land in a different place when sorted by tool. Variance analysis serves a five-year plant decision, and a scenario model serves a one-quarter freight decision. The tools are shared, so the tool cannot tell the two kinds apart.'}));
+}
+document.getElementById('toggleTest').addEventListener('click', function(){
+  byToolOn = !byToolOn;
+  this.setAttribute('aria-pressed', byToolOn ? 'true' : 'false');
+  this.textContent = byToolOn ? 'Hide the tool sort' : 'Sort by the tool instead';
+  renderTest();
+});
+renderCards();
+refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Does the plan answer the goals?</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.items{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.4rem}
+.items li{background:var(--card);border:1px solid var(--rule);padding:.55rem .8rem;display:grid;grid-template-columns:1fr auto;gap:.15rem .9rem}
+.items .nm{font-weight:700}
+.items .ds{color:var(--muted);font-size:.95rem;grid-column:1 / -1;margin:0}
+.items .amt{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.yn4{display:grid;gap:.4rem}
+.stmt{margin:.8rem 0}
+.stmt legend{font-weight:700}
+.res dl{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;margin:.4rem 0}
+.res dt{color:var(--muted)}
+.res dd{margin:0}
+.good{color:var(--teal);font-weight:700}
+.bad{color:var(--amber);font-weight:700}
+@media (max-width:480px){.res dl{grid-template-columns:1fr}.items li{grid-template-columns:1fr}.items .amt{text-align:left}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Does the plan answer the goals?</h1>
+
+  <p>Sample Enterprise Manufacturing (SEM) leadership has named three goals for the year. Finance has a monthly pack of eight numbers and a plan with six budget lines. You advise SEM&rsquo;s finance team. For each goal, read the pack and the plan and commit to what they show.</p>
+
+  <section aria-labelledby="goalsHead">
+    <h2 id="goalsHead" style="margin-top:1.4rem">The three goals</h2>
+    <ol class="items" id="goals"></ol>
+  </section>
+
+  <section aria-labelledby="packHead">
+    <h2 id="packHead" style="margin-top:1.4rem">The monthly pack</h2>
+    <ul class="items" id="pack"></ul>
+  </section>
+
+  <section aria-labelledby="planHead">
+    <h2 id="planHead" style="margin-top:1.4rem">The plan&rsquo;s budget lines</h2>
+    <p class="hint">Annual amounts in USD millions. These figures are illustrative.</p>
+    <ul class="items" id="plan"></ul>
+  </section>
+
+  <section class="order" aria-labelledby="readHead">
+    <h2 id="readHead" style="margin-top:0">Your reading</h2>
+    <p>For each goal, choose what the pack and the plan show.</p>
+    <div id="reading"></div>
+    <p class="hint" id="firstNote" hidden></p>
+    <button type="button" class="primary" id="commit" disabled>Commit my reading</button>
+    <p class="hint" style="margin-top:.6rem">Your result appears below after you commit.</p>
+  </section>
+
+  <div class="sr" id="live" aria-live="polite"></div>
+
+  <section id="reveal" hidden aria-labelledby="revealHead">
+    <h2 id="revealHead" tabindex="-1">What the pack and the plan show</h2>
+    <div id="revealBody"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All goals, numbers, and amounts in this activity are invented for practice.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var GOALS = [
+  {id:'g1', text:'Win more aftermarket parts and service business from existing customers.'},
+  {id:'g2', text:'Ship every customer order by the promised date.'},
+  {id:'g3', text:'Free cash that is tied up in inventory.'}
+];
+var NUMBERS = [
+  {id:'n1', name:'Total revenue per month', says:'All sales recognized in the month, across every product line.', serves:null},
+  {id:'n2', name:'Orders received', says:'Count of customer orders entering the system each month, across every product line.', serves:null},
+  {id:'n3', name:'On-time shipment rate', says:'Share of orders shipped by the promised date.', serves:'g2'},
+  {id:'n4', name:'Orders open past the promised date', says:'Count of orders still waiting to ship after the promised date.', serves:'g2'},
+  {id:'n5', name:'Gross margin percent', says:'Sales less the cost of goods, as a share of sales.', serves:null},
+  {id:'n6', name:'Inventory value', says:'Dollar value of inventory on hand at month end.', serves:'g3'},
+  {id:'n7', name:'Headcount', says:'Number of people on the payroll.', serves:null},
+  {id:'n8', name:'Plant utilization', says:'Share of plant capacity in use.', serves:null}
+];
+var LINES = [
+  {id:'b1', name:'Aftermarket field-service staffing', says:'Pays for technicians who service existing customers\u2019 equipment.', amount:18, funds:'g1'},
+  {id:'b2', name:'Aftermarket parts catalog and ordering site', says:'Pays to build the catalog and site where existing customers order parts.', amount:9, funds:'g1'},
+  {id:'b3', name:'Outbound warehouse labor', says:'Pays for the staff who pick, pack, and ship orders.', amount:22, funds:'g2'},
+  {id:'b4', name:'New-distributor onboarding program', says:'Pays to sign and train new distributors.', amount:14, funds:null},
+  {id:'b5', name:'Brand advertising', says:'Pays for general advertising of the SEM brand.', amount:11, funds:null},
+  {id:'b6', name:'Warehouse expansion', says:'Adds storage space for more inventory.', amount:26, funds:null}
+];
+var OPTIONS = [
+  {id:'both', text:'A number and a budget line both serve it'},
+  {id:'numOnly', text:'A number serves it, but no budget line'},
+  {id:'lineOnly', text:'A budget line serves it, but no number'},
+  {id:'neither', text:'Neither a number nor a budget line serves it'}
+];
+function coverage(goalId){
+  var nums = NUMBERS.filter(function(n){ return n.serves === goalId; });
+  var lines = LINES.filter(function(l){ return l.funds === goalId; });
+  var key = nums.length && lines.length ? 'both' : (nums.length ? 'numOnly' : (lines.length ? 'lineOnly' : 'neither'));
+  return {nums:nums, lines:lines, key:key};
+}
+function totalPlan(){ return LINES.reduce(function(s, l){ return s + l.amount; }, 0); }
+function fundedPlan(){ return LINES.filter(function(l){ return l.funds; }).reduce(function(s, l){ return s + l.amount; }, 0); }
+function evaluate(reading){
+  if (!reading) return {error:'Answer all three goals.'};
+  var ok = [];
+  for (var i = 0; i < GOALS.length; i++) {
+    if (!reading[GOALS[i].id]) return {error:'Answer all three goals.'};
+    if (!OPTIONS.some(function(o){ return o.id === reading[GOALS[i].id]; })) return {error:'Unknown choice.'};
+    ok.push(reading[GOALS[i].id] === coverage(GOALS[i].id).key);
+  }
+  var right = ok.filter(Boolean).length;
+  var orphanNums = NUMBERS.filter(function(n){ return !n.serves; });
+  var orphanLines = LINES.filter(function(l){ return !l.funds; });
+  var orphanDollars = orphanLines.reduce(function(s, l){ return s + l.amount; }, 0);
+  return {ok:ok, right:right, orphanNums:orphanNums, orphanLines:orphanLines, orphanDollars:orphanDollars,
+          fundedDollars:fundedPlan(), total:totalPlan()};
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+function n(x){ return x.toLocaleString('en-US'); }
+var reading = {}, locked = false, firstReading = null;
+function say(m){ document.getElementById('live').textContent = m; }
+function optText(id){ return OPTIONS.filter(function(o){ return o.id === id; })[0].text; }
+function goalText(id){ return GOALS.filter(function(g){ return g.id === id; })[0].text; }
+
+function renderLists(){
+  var gl = document.getElementById('goals');
+  GOALS.forEach(function(g){ gl.appendChild(h('li', null, [h('span', {class:'nm', text:g.text})])); });
+  var pk = document.getElementById('pack');
+  NUMBERS.forEach(function(x){ pk.appendChild(h('li', null, [h('span', {class:'nm', text:x.name}), h('span'), h('p', {class:'ds', text:x.says})])); });
+  var pl = document.getElementById('plan');
+  LINES.forEach(function(x){ pl.appendChild(h('li', null, [h('span', {class:'nm', text:x.name}), h('span', {class:'amt', text:n(x.amount)}), h('p', {class:'ds', text:x.says})])); });
+}
+function renderReading(){
+  var wrap = document.getElementById('reading');
+  wrap.innerHTML = '';
+  GOALS.forEach(function(g){
+    var fs = h('fieldset', {class:'stmt'});
+    fs.appendChild(h('legend', {text:'Goal: ' + g.text}));
+    var box = h('div', {class:'yn4'});
+    OPTIONS.forEach(function(o){
+      var id = 'r-' + g.id + '-' + o.id;
+      var lab = h('label', {class:'opt' + (reading[g.id] === o.id ? ' sel' : ''), 'for':id});
+      var inp = h('input', {type:'radio', name:'g-' + g.id, id:id, value:o.id});
+      if (reading[g.id] === o.id) inp.checked = true;
+      inp.disabled = locked;
+      lab.appendChild(inp);
+      lab.appendChild(h('span', {text:o.text}));
+      box.appendChild(lab);
+    });
+    fs.appendChild(box);
+    wrap.appendChild(fs);
+  });
+  var done = GOALS.every(function(g){ return reading[g.id]; });
+  var c = document.getElementById('commit');
+  c.disabled = locked || !done;
+  c.hidden = locked;
+  var fn = document.getElementById('firstNote');
+  if (firstReading && !locked) { fn.hidden = false; fn.textContent = 'Your first committed reading is kept for comparison. Change any answer and commit again.'; } else fn.hidden = true;
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('g-') === 0) {
+    reading[t.name.slice(2)] = t.value;
+    renderReading();
+  }
+});
+function buildReveal(res){
+  var body = document.getElementById('revealBody');
+  body.innerHTML = '';
+  GOALS.forEach(function(g, i){
+    var cv = coverage(g.id);
+    var card = h('section', {class:'card res', 'aria-label':g.text});
+    card.appendChild(h('h3', {text:g.text}));
+    var dl = h('dl');
+    dl.appendChild(h('dt', {text:'Your reading'})); dl.appendChild(h('dd', {text:optText(reading[g.id])}));
+    dl.appendChild(h('dt', {text:'Numbers that serve it'})); dl.appendChild(h('dd', {text: cv.nums.length ? cv.nums.map(function(x){ return x.name; }).join('; ') : 'None'}));
+    dl.appendChild(h('dt', {text:'Budget lines that fund it'})); dl.appendChild(h('dd', {text: cv.lines.length ? cv.lines.map(function(x){ return x.name + ' (' + n(x.amount) + ')'; }).join('; ') : 'None'}));
+    var st = h('dd'); st.appendChild(h('span', {class: res.ok[i] ? 'good' : 'bad', text: res.ok[i] ? 'Your reading matches.' : 'Your reading differs: ' + optText(cv.key) + '.'}));
+    dl.appendChild(h('dt', {text:'Result'})); dl.appendChild(st);
+    card.appendChild(dl);
+    body.appendChild(card);
+  });
+  var panel = h('div', {class:'panel'});
+  panel.appendChild(h('h3', {text:'What serves no goal'}));
+  var dl = h('dl');
+  dl.appendChild(h('dt', {text:'Numbers in the pack that serve no goal'})); dl.appendChild(h('dd', {text:res.orphanNums.length + ' of ' + NUMBERS.length}));
+  dl.appendChild(h('dt', {text:'Budget lines that fund no goal'})); dl.appendChild(h('dd', {text:res.orphanLines.length + ' of ' + LINES.length}));
+  dl.appendChild(h('dt', {text:'Plan dollars that fund a goal'})); dl.appendChild(h('dd', {text:'USD ' + n(res.fundedDollars) + ' million of ' + n(res.total)}));
+  dl.appendChild(h('dt', {text:'Plan dollars that fund no goal'})); dl.appendChild(h('dd', {text:'USD ' + n(res.orphanDollars) + ' million of ' + n(res.total)}));
+  panel.appendChild(dl);
+  body.appendChild(panel);
+  var msg = res.right === 3
+    ? 'All three of your readings match. You traced each goal to the numbers and the money behind it, including the two goals with a gap on one side.'
+    : res.right + ' of your 3 readings match. Several numbers and budget lines have names that sound related to a goal, yet none of them is built to answer it. Tracing each item to the goal it serves shows where a goal has a number but no money, or money but no number.';
+  body.appendChild(h('p', {class:'verdict', text:msg}));
+  var cap = h('div', {class:'capability'});
+  cap.appendChild(h('h3', {text:'The capability this points to'}));
+  cap.appendChild(h('p', {text:'Before a plan can be judged, finance has to trace every number and every budget line to the goal it serves, and mark what traces to none.'}));
+  body.appendChild(cap);
+  body.appendChild(h('div', {class:'again'}, [h('button', {type:'button', id:'again', text:'Read again'})]));
+}
+document.addEventListener('click', function(ev){
+  var b = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+  if (!b || b.disabled) return;
+  if (b.id === 'commit') {
+    var res = evaluate(reading);
+    if (res.error) { say(res.error); return; }
+    if (!firstReading) firstReading = JSON.parse(JSON.stringify(reading));
+    locked = true;
+    renderReading();
+    buildReveal(res);
+    document.getElementById('reveal').hidden = false;
+    var hd = document.getElementById('revealHead'); hd.focus();
+    if (hd.scrollIntoView) { var rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; hd.scrollIntoView({behavior: rm ? 'auto' : 'smooth', block:'start'}); }
+    say('Result shown below.');
+  } else if (b.id === 'again') {
+    locked = false;
+    document.getElementById('reveal').hidden = true;
+    renderReading();
+    var f = document.getElementById('readHead'); f.setAttribute('tabindex', '-1'); f.focus();
+    say('Reading unlocked. Change an answer and commit again.');
+  }
+});
+renderLists();
+renderReading();
+</script>
+</body>
+</html>

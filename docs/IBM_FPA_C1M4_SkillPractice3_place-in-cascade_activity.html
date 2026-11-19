@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Place each number in the cascade</title>
+<style>
+:root{
+  --ink:#1C2B33;
+  --paper:#F4F7F7;
+  --card:#FFFFFF;
+  --rule:#C5D0D3;
+  --muted:#46565E;
+  --teal:#0B6460;
+  --teal-soft:#DDEEEC;
+  --slate:#55646C;
+  --amber:#8A4300;
+  --amber-soft:#FBEBD6;
+  --focus:#1B4DD6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+main{max-width:46rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.25;margin:0 0 .6rem;font-weight:700}
+h1{font-size:1.75rem}
+h2{font-size:1.3rem;margin-top:2rem}
+h3{font-size:1.1rem;margin-top:1.5rem}
+p{margin:0 0 .85rem;max-width:38rem}
+.ask{
+  margin:1rem 0;padding:.9rem 1.1rem;background:var(--card);
+  border-left:4px solid var(--teal);font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;
+}
+.ask cite{display:block;font:italic .9rem system-ui,sans-serif;color:var(--muted);margin-top:.35rem}
+dl.facts{
+  display:grid;grid-template-columns:1fr auto;gap:0;margin:1rem 0;background:var(--card);
+  border:1px solid var(--rule);
+}
+dl.facts dt,dl.facts dd{margin:0;padding:.5rem .9rem;border-bottom:1px solid var(--rule)}
+dl.facts dt:last-of-type,dl.facts dd:last-of-type{border-bottom:0}
+dl.facts dd{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.term{color:var(--muted);font-weight:400}
+.num{font-variant-numeric:tabular-nums}
+
+ul.actions{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ul.actions li{
+  background:var(--card);border:1px solid var(--rule);padding:.75rem .9rem;
+  display:grid;grid-template-columns:1fr auto;gap:.4rem .9rem;align-items:start;
+}
+ul.actions li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.a-title{font-weight:700}
+.a-desc{color:var(--muted);font-size:.95rem;margin:.1rem 0 0}
+.a-hours{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;text-align:right}
+.a-btn{grid-column:1 / -1}
+
+button{
+  font:inherit;font-weight:600;min-height:44px;padding:.45rem 1rem;cursor:pointer;
+  background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:4px;
+}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.small{min-height:44px;padding:.3rem .7rem;font-size:.9rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.order{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1rem 0}
+.order h3{margin-top:0}
+ol.picks{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+ol.picks li{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+ol.picks li:last-child{border-bottom:0}
+.rank{
+  width:2rem;height:2rem;border-radius:50%;background:var(--ink);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.pick-ctrls{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:.4rem}
+.empty{color:var(--muted);margin:0}
+.hint{color:var(--muted);font-size:.95rem}
+
+#reveal{margin-top:2rem;border-top:3px solid var(--ink);padding-top:.5rem}
+#reveal[hidden]{display:none}
+#reveal h2{margin-top:1rem}
+.weekbar{position:relative;margin:2.2rem 0 .6rem}
+.bar{display:flex;height:3rem;background:var(--card);border:1px solid var(--rule)}
+.seg{
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-variant-numeric:tabular-nums;border-right:2px solid var(--paper);min-width:0;
+}
+.seg.past{background:var(--slate)}
+.seg.fwd{background:var(--teal)}
+.seg.over{
+  color:var(--ink);
+  background:repeating-linear-gradient(45deg,var(--amber-soft) 0 7px,#F0C48D 7px 14px);
+}
+.friday{position:absolute;top:-1.6rem;bottom:-.4rem;width:0;border-left:3px solid var(--ink)}
+.friday span{
+  position:absolute;top:0;right:6px;white-space:nowrap;font-size:.85rem;font-weight:700;
+  transform:translateY(-.1rem);
+}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem}
+.legend i{display:inline-block;width:1rem;height:1rem;vertical-align:-.15rem;margin-right:.35rem;border:1px solid var(--rule)}
+.legend .l-past{background:var(--slate)}
+.legend .l-fwd{background:var(--teal)}
+.legend .l-over{background:repeating-linear-gradient(45deg,var(--amber-soft) 0 4px,#F0C48D 4px 8px)}
+
+ol.result{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.6rem}
+ol.result li{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem}
+ol.result .r-body{min-width:0}
+.r-title{font-weight:700}
+.r-meta{color:var(--muted);font-size:.95rem;font-variant-numeric:tabular-nums}
+.status-ok{color:var(--teal);font-weight:700}
+.status-no{color:var(--amber);font-weight:700}
+
+.needs{display:grid;gap:.5rem;margin:1rem 0}
+.need{background:var(--card);border:1px solid var(--rule);padding:.7rem .9rem;display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.need b{font-weight:700}
+.verdict{padding:.9rem 1.1rem;background:var(--card);border-left:4px solid var(--ink);margin:1rem 0}
+.turns{background:var(--teal-soft);border:1px solid var(--teal);padding:.9rem 1.1rem;margin:1.2rem 0}
+.turns dl{display:grid;grid-template-columns:1fr auto;margin:.5rem 0;gap:.2rem .9rem}
+.turns dt,.turns dd{margin:0}
+.turns dd{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.capability{border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.4rem}
+.capability p{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem}
+.again{margin-top:1.2rem}
+.firstnote{color:var(--muted);font-size:.95rem}
+.foot{margin-top:2.5rem;color:var(--muted);font-size:.85rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  main{padding:1rem .9rem 2.5rem}
+  h1{font-size:1.5rem}
+  ul.actions li,.need,dl.facts,.turns dl{grid-template-columns:1fr}
+  .a-hours,dl.facts dd,.turns dd{text-align:left}
+  dl.facts dt{border-bottom:0;padding-bottom:0}
+  button{width:100%}
+  .pick-ctrls button{width:auto;flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:.4rem}
+.opts{display:grid;gap:.4rem}
+.opt{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .7rem;border:1px solid var(--rule);background:var(--card);cursor:pointer;border-radius:4px}
+.opt input{margin-top:.3rem;width:1.15rem;height:1.15rem;flex:none}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:.9rem 0}
+.card h3{margin:0 0 .5rem;font-size:1.05rem}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .9rem;margin:0 0 .8rem;font-size:.95rem}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-variant-numeric:tabular-nums}
+.fb{padding:.6rem .8rem;margin-top:.7rem;border-left:4px solid var(--ink);background:var(--paper)}
+.fb.correct{border-color:var(--teal);background:var(--teal-soft)}
+.fb.near{border-color:var(--amber);background:var(--amber-soft)}
+.fb.wrong{border-color:#7A1F3D;background:#F7E4EA}
+.fb b{display:block}
+.fb p{margin:.2rem 0 0}
+.panel{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem;margin:1.2rem 0}
+.panel h3{margin-top:0}
+.panel dl{display:grid;grid-template-columns:1fr auto;gap:.25rem .9rem;margin:.5rem 0}
+.panel dt{margin:0}
+.panel dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.panel .total{border-top:2px solid var(--ink);padding-top:.35rem;font-size:1.05rem}
+.second{border-top:3px solid var(--ink);margin-top:2rem;padding-top:.5rem}
+.second[hidden]{display:none}
+select,input[type=range]{font:inherit;max-width:100%}
+select{min-height:44px;padding:.3rem .5rem;border:2px solid var(--ink);border-radius:4px;background:#fff;color:var(--ink);width:100%}
+input[type=range]{width:100%;min-height:44px}
+label.fl{display:block;font-weight:700;margin:.6rem 0 .25rem}
+.badge{display:inline-block;padding:.1rem .55rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.9rem}
+.badge.s{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.badge.l{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.badge.n{border-color:var(--slate);color:var(--slate);background:#fff}
+.defs{margin:.8rem 0;padding:.7rem .9rem;background:var(--card);border:1px solid var(--rule);font-size:.95rem}
+.defs dt{font-weight:700}
+.defs dd{margin:0 0 .4rem}
+.flag{color:var(--amber);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.ok{color:var(--teal);font-weight:700;font-size:.92rem;margin:.2rem 0 0}
+.mv{display:grid;grid-template-columns:1fr auto;gap:.3rem .9rem;align-items:start}
+.mv .needs-prod{grid-column:1 / -1;color:var(--muted);font-size:.92rem;margin:0}
+.pool{list-style:none;margin:.6rem 0;padding:0;display:grid;gap:.5rem}
+.pool li{background:var(--card);border:1px solid var(--rule);padding:.65rem .8rem}
+.pool li.picked{border-color:var(--teal);background:var(--teal-soft)}
+.finding{background:var(--card);border-left:4px solid var(--teal);padding:.8rem 1rem;margin:1rem 0}
+@media (max-width:480px){
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:.3rem}
+  .panel dl{grid-template-columns:1fr}
+  .panel dd{text-align:left}
+  .mv{grid-template-columns:1fr}
+}
+
+.sw{display:grid;gap:.4rem}
+.stmt{margin:.6rem 0}
+.tree,.tree ul{list-style:none;margin:.3rem 0;padding-left:1.2rem;border-left:2px solid var(--rule)}
+.tree{padding-left:0;border-left:0}
+.tree li{margin:.3rem 0}
+.tree .top{font-weight:700}
+.tag{display:inline-block;padding:.05rem .5rem;border:2px solid var(--ink);border-radius:4px;font-weight:700;font-size:.85rem;margin-left:.4rem}
+.tag.k{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.tag.u{border-color:var(--slate);color:var(--slate)}
+.tag.d{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.goalbox{background:var(--card);border-left:4px solid var(--teal);padding:.7rem 1rem;margin:1rem 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Place each number in the cascade</h1>
+
+  <p>The <em>KPI cascade</em> turns a strategic goal into numbers a team can act on, in three tiers. The goal sits on top. Beneath it sit <em>financial targets</em>, which show in accounting terms that the goal is being met. Beneath those sit <em>operational KPIs</em>, which are numbers a business unit controls that drive a financial target. A number belongs in the cascade only when it traces up to a target and points down to an action.</p>
+
+  <p>You advise Sample Enterprise Manufacturing (SEM), a fictional manufacturer.</p>
+  <div class="goalbox"><b>Goal:</b> Become the preferred parts supplier for plant maintenance teams.</div>
+  <p>Nine numbers are on the table. Place each one.</p>
+
+  <div id="cards"></div>
+
+  <button type="button" class="primary" id="check" disabled>Check my placements</button>
+  <p class="hint" id="checkHint" style="margin-top:.6rem">Place all nine numbers to check.</p>
+  <div id="summary" aria-live="polite"></div>
+
+  <section class="second" id="second" hidden aria-labelledby="secondHead">
+    <h2 id="secondHead" style="margin-top:.6rem">Change the limit on a level</h2>
+    <p>A level usually holds three to five KPIs, and that range is a guideline. Each KPI below carries an illustrative decision-value score. The lowest scores move to a supplemental layer, where the team tracks them without featuring them. Change the limit and watch the tree.</p>
+    <label class="fl" for="limit">KPIs allowed at the operational level: <span class="num" id="limitOut">5</span></label>
+    <input type="range" id="limit" min="2" max="5" step="1" value="5">
+    <div class="panel" id="limitResult" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">SEM is fictional. All numbers and scores in this activity are invented for practice. Decision-value scores are illustrative.</p>
+</main>
+
+<script>
+/*LOGIC-START*/
+var PLACES = {
+  FT:'Financial target',
+  OKR:'Operational KPI under revenue growth',
+  OKM:'Operational KPI under operating margin',
+  NO:'Not in the cascade'
+};
+var TARGETS = {OKR:'c1', OKM:'c2'};
+var CANDS = [
+  {id:'c1', name:'Aftermarket revenue growth rate',
+   measures:'Growth in aftermarket sales over the prior year.', who:'Finance partner for Sales and Service', data:'Reported from the ledger each month.',
+   key:'FT'},
+  {id:'c2', name:'Aftermarket operating margin',
+   measures:'Operating profit as a share of aftermarket sales.', who:'Finance partner for Sales and Service', data:'Reported from the ledger each month.',
+   key:'FT'},
+  {id:'c3', name:'Order fill rate on first shipment',
+   measures:'Share of parts orders filled completely on the first shipment. Customers who get the part they need order again.', who:'After-sales operations lead', data:'Order system, weekly.',
+   key:'OKR', score:9},
+  {id:'c4', name:'Repeat-order rate per customer',
+   measures:'Share of customers who ordered parts before and order again this quarter.', who:'After-sales operations lead', data:'Order system, monthly.',
+   key:'OKR', score:8},
+  {id:'c5', name:'Cost to fulfill one parts order',
+   measures:'What it costs to pick, pack, and ship one order.', who:'Warehouse supervisor', data:'Warehouse cost reports, monthly.',
+   key:'OKM', score:7},
+  {id:'c6', name:'Return rate for wrong-part shipments',
+   measures:'Share of shipments returned because the wrong part was sent. Each return costs SEM a second shipment.', who:'Warehouse supervisor', data:'Returns log, weekly.',
+   key:'OKM', score:4},
+  {id:'c7', name:'Website page views',
+   measures:'Visits to the parts ordering site.', who:'Web team', data:'Automatic export from the website, easy to pull.',
+   key:'NO'},
+  {id:'c8', name:'Marketing emails sent',
+   measures:'Count of marketing emails sent each month.', who:'Marketing team', data:'Count from the email tool, easy to pull.',
+   key:'NO'},
+  {id:'c9', name:'Company-wide free cash flow',
+   measures:'Cash left after spending across all of SEM.', who:'No single unit. Every function affects it.', data:'Reported from the ledger each month.',
+   key:'NO'}
+];
+function candById(id){ return CANDS.filter(function(c){ return c.id === id; })[0]; }
+function scorePlacements(ans){
+  var wrong = CANDS.filter(function(c){ return ans[c.id] !== c.key; }).map(function(c){ return c.id; });
+  return {wrong:wrong, state: wrong.length === 0 ? 'correct' : (wrong.length === 1 ? 'near' : 'wrong')};
+}
+function operationalKpis(){ return CANDS.filter(function(c){ return c.key === 'OKR' || c.key === 'OKM'; }); }
+/* Keep the highest-scoring KPIs up to the limit. The rest move to the supplemental layer. */
+function applyLimit(limit){
+  var sorted = operationalKpis().slice().sort(function(a, b){ return b.score - a.score; });
+  var kept = sorted.slice(0, limit), moved = sorted.slice(limit);
+  var targetsWithoutDriver = ['c1','c2'].filter(function(t){
+    return !kept.some(function(k){ return TARGETS[k.key] === t; });
+  });
+  return {kept:kept, moved:moved, targetsWithoutDriver:targetsWithoutDriver};
+}
+/*LOGIC-END*/
+
+function h(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'class') e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (var i = 0; i < kids.length; i++) e.appendChild(kids[i]);
+  return e;
+}
+var ans = {}, checked = false;
+function renderCards(){
+  var wrap = document.getElementById('cards');
+  CANDS.forEach(function(c){
+    var card = h('section', {class:'card', 'aria-labelledby':'t-' + c.id});
+    card.appendChild(h('h3', {id:'t-' + c.id, text:c.name}));
+    var dl = h('dl');
+    [['What it measures', c.measures], ['Who controls it', c.who], ['Where the data comes from', c.data]].forEach(function(r){
+      dl.appendChild(h('dt', {text:r[0]})); dl.appendChild(h('dd', {text:r[1]}));
+    });
+    card.appendChild(dl);
+    var fs = h('fieldset', {class:'stmt'});
+    fs.appendChild(h('legend', {text:'Where does it belong?'}));
+    var sw = h('div', {class:'sw'});
+    ['FT','OKR','OKM','NO'].forEach(function(p){
+      var id = 'r-' + c.id + '-' + p;
+      var lab = h('label', {class:'opt', 'for':id});
+      lab.appendChild(h('input', {type:'radio', name:'g-' + c.id, id:id, value:p}));
+      lab.appendChild(h('span', {text:PLACES[p]}));
+      sw.appendChild(lab);
+    });
+    fs.appendChild(sw);
+    card.appendChild(fs);
+    card.appendChild(h('div', {id:'fb-' + c.id}));
+    wrap.appendChild(card);
+  });
+}
+function refreshSelected(){ document.querySelectorAll('.opt').forEach(function(l){ var i = l.querySelector('input'); l.classList.toggle('sel', !!(i && i.checked)); }); }
+function refresh(){
+  var c = Object.keys(ans).length;
+  document.getElementById('check').disabled = c !== CANDS.length;
+  document.getElementById('checkHint').textContent = c === CANDS.length ? 'All nine are placed. You can check, and you can still change a placement.' : 'Place all nine numbers to check. ' + c + ' of 9 placed.';
+}
+function clearFeedback(){
+  checked = false;
+  document.getElementById('summary').innerHTML = '';
+  CANDS.forEach(function(c){ document.getElementById('fb-' + c.id).innerHTML = ''; });
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.type === 'radio' && t.name.indexOf('g-') === 0) {
+    ans[t.name.slice(2)] = t.value;
+    refreshSelected();
+    if (checked) clearFeedback();
+    refresh();
+  }
+});
+function fbBox(kind, head, body){
+  var b = h('div', {class:'fb ' + kind});
+  b.appendChild(h('b', {text:head}));
+  b.appendChild(h('p', {text:body}));
+  return b;
+}
+function reasonFor(c){
+  if (c.key === 'FT') return 'It states in accounting terms that the goal is being met, so it is a financial target.';
+  if (c.key === 'OKR') return 'The business unit controls it, and it drives revenue growth, so it is an operational KPI under that target.';
+  if (c.key === 'OKM') return 'The business unit controls it, and it drives operating margin, so it is an operational KPI under that target.';
+  if (c.id === 'c9') return 'It matters to the budget, yet this goal does not drive it and no single unit controls it, so it stays out of this cascade.';
+  return 'It is easy to pull, and it traces up to no financial target, so it stays out of the cascade.';
+}
+function treeFor(limitRes){
+  var box = h('div', {class:'panel'});
+  box.appendChild(h('h3', {text:'The cascade you built'}));
+  var ul = h('ul', {class:'tree'});
+  var top = h('li', null, [h('span', {class:'top', text:'Goal: Become the preferred parts supplier for plant maintenance teams'})]);
+  var tiers = h('ul');
+  ['c1','c2'].forEach(function(t){
+    var li = h('li');
+    li.appendChild(document.createTextNode(candById(t).name));
+    li.appendChild(h('span', {class:'tag k', text:'Financial target'}));
+    var sub = h('ul');
+    var drivers = limitRes.kept.filter(function(k){ return TARGETS[k.key] === t; });
+    drivers.forEach(function(k){
+      var d = h('li');
+      d.appendChild(document.createTextNode(k.name + ' (owner: ' + k.who + ')'));
+      sub.appendChild(d);
+    });
+    if (!drivers.length) sub.appendChild(h('li', null, [h('span', {class:'tag d', text:'No driver'})]));
+    li.appendChild(sub);
+    tiers.appendChild(li);
+  });
+  top.appendChild(tiers);
+  ul.appendChild(top);
+  box.appendChild(ul);
+  return box;
+}
+function check(){
+  var res = scorePlacements(ans);
+  checked = true;
+  var sum = document.getElementById('summary');
+  sum.innerHTML = '';
+  CANDS.forEach(function(c){
+    var box = document.getElementById('fb-' + c.id);
+    box.innerHTML = '';
+    if (res.wrong.indexOf(c.id) === -1) box.appendChild(fbBox('correct', 'Correct.', reasonFor(c)));
+    else box.appendChild(fbBox(res.state === 'near' ? 'near' : 'wrong', res.state === 'near' ? 'Check this one.' : 'Not quite.', 'Start here: what would this number trace up to, and what action would it point down to? Then ask whether it is a target, a driver, or neither.'));
+  });
+  if (res.state === 'correct') {
+    sum.appendChild(fbBox('correct', 'Correct. All nine are placed.', 'Two financial targets, each with two operational drivers and a named owner. Three numbers stay out. Two of them are easy to pull, and one is budget-important, yet none traces up to a target for this goal.'));
+  } else if (res.state === 'near') {
+    sum.appendChild(fbBox('near', 'Close. Eight of nine are placed correctly, and the structure is right.', 'One number is out of place: \u201c' + candById(res.wrong[0]).name + '\u201d. Read its card again.'));
+  } else {
+    sum.appendChild(fbBox('wrong', 'Not quite. ' + res.wrong.length + ' of 9 are out of place.', 'First move: for each flagged number, ask what financial target it would trace up to and what action it would point down to. A number that is easy to pull can still trace to nothing. Change your placements and check again.'));
+  }
+  sum.appendChild(treeFor(applyLimit(5)));
+  document.getElementById('second').hidden = false;
+  renderLimit();
+}
+document.getElementById('check').addEventListener('click', check);
+
+function renderLimit(){
+  var limit = parseInt(document.getElementById('limit').value, 10);
+  document.getElementById('limitOut').textContent = String(limit);
+  var res = applyLimit(limit);
+  var box = document.getElementById('limitResult');
+  box.innerHTML = '';
+  box.appendChild(treeFor(res));
+  box.appendChild(h('p', {text:'Supplemental layer: ' + (res.moved.length ? res.moved.map(function(k){ return k.name + ' (score ' + k.score + ')'; }).join('; ') : 'empty') + '.'}));
+  if (res.targetsWithoutDriver.length) {
+    box.appendChild(h('p', {class:'chg', style:'color:var(--amber);font-weight:700', text:'The tree now has a financial target with no driver: ' + res.targetsWithoutDriver.map(function(t){ return candById(t).name; }).join('; ') + '. Trimming by score alone broke the cascade. Every target needs at least one driver with a named owner.'}));
+  } else {
+    box.appendChild(h('p', {class:'hint', text:'Every financial target still has a driver. The scores are illustrative, and the limit is a guideline.'}));
+  }
+}
+document.getElementById('limit').addEventListener('input', renderLimit);
+renderCards();
+refresh();
+</script>
+</body>
+</html>
